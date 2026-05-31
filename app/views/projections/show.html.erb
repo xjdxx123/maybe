@@ -132,10 +132,11 @@
 
     <div class="space-y-2 mb-4">
       <% @methodology_classes.each do |klass| %>
+        <% er = @cma.expected_real_return(klass) %>
         <details class="border border-secondary rounded-lg">
           <summary class="flex justify-between items-center gap-2 px-3 py-2 cursor-pointer text-sm">
             <span class="text-primary font-medium"><%= klass %></span>
-            <span class="text-secondary"><%= rr_pct_yr(@cma.expected_real_return(klass)) %> · σ <%= number_to_percentage((@cma.sigma(klass) || 0) * 100, precision: 0) %></span>
+            <span class="text-secondary"><%= rr_pct_yr(er) %> · σ <%= number_to_percentage((@cma.sigma(klass) || 0) * 100, precision: 0) %></span>
           </summary>
           <div class="px-3 pb-3 overflow-x-auto">
             <table class="w-full text-sm">
@@ -164,9 +165,7 @@
                 <% end %>
                 <tr>
                   <td class="py-1 pr-4 text-primary font-medium">= Expected real return</td>
-                  <td class="py-1 pr-4 text-primary font-medium whitespace-nowrap"><%= rr_pct_yr(@cma.expected_real_return(klass)) %></td>
-                  <td></td>
-                  <td></td>
+                  <td class="py-1 pr-4 text-primary font-medium whitespace-nowrap" colspan="3"><%= rr_pct_yr(er) %></td>
                 </tr>
               </tbody>
             </table>
