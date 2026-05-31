@@ -55,8 +55,10 @@ module ProjectionsHelper
         "real yield #{pct.call(c['real_yield'])}"
       when "cash"
         "real rate #{pct.call(c['real_rate'])}"
+      when "gold"
+        "golden constant ≈ #{pct.call(c['real_return'])} (gold's long-run real return ≈ 0)"
       else
-        "≈ #{pct.call(c['real_return'])} (golden constant / assumption)"
+        "assumption ≈ #{pct.call(c['real_return'])}"
       end
     "#{body} = #{pct.call(er)}/yr"
   end
