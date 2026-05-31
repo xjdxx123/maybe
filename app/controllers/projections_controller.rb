@@ -20,10 +20,12 @@ class ProjectionsController < ApplicationController
       real_estate: params.dig(:w, :real_estate).to_f, gold: params.dig(:w, :gold).to_f,
       cash: params.dig(:w, :cash).to_f
     }
-    @comparison = RealReturn::PortfolioComparison.new(
+    comparison = RealReturn::PortfolioComparison.new(
       Current.family, as_of: Date.current, horizon: @horizon, annual_contribution: @contribution,
       custom_weights: @custom_weights
-    ).rows
+    )
+    @comparison = comparison.rows
+    @methodology_classes = comparison.referenced_asset_classes
 
     @breadcrumbs = [ [ "Home", root_path ], [ "Projection", nil ] ]
   end
