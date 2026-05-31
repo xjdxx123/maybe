@@ -52,6 +52,16 @@ class RealReturn::CmaTest < ActiveSupport::TestCase
     assert_in_delta cma.expected_real_return("equity_cn"), bd.sum { |c| c[:contribution] }, 1e-9
   end
 
+  test "breakdown handles a non-equity kind: positive signs, shared valuation key, sums to total" do
+    bd = cma.breakdown("real_estate_cn")
+    assert_equal %w[net_rental_yield real_rent_growth valuation_reversion], bd.map { |c| c[:key] }
+    # all added as-is (no negation): 0.018 + 0.005 + (-0.013)
+    assert_in_delta 0.018, bd.find { |c| c[:key] == "net_rental_yield" }[:contribution], 1e-9
+    assert_in_delta(-0.013, bd.find { |c| c[:key] == "valuation_reversion" }[:contribution], 1e-9)
+    assert_equal :assumption, bd.find { |c| c[:key] == "valuation_reversion" }[:type]
+    assert_in_delta cma.expected_real_return("real_estate_cn"), bd.sum { |c| c[:contribution] }, 1e-9
+  end
+
   test "breakdown surfaces per-input source text, nil when absent" do
     bd = cma.breakdown("equity_cn")
     assert_equal "sample dividend source", bd.find { |c| c[:key] == "dividend_yield" }[:source]
