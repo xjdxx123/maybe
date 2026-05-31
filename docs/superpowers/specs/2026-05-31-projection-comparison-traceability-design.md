@@ -63,7 +63,7 @@ Each alternative is projected with the **same** start capital (= current basket 
 
 ## 6. Custom allocation input
 
-Params panel adds 5 percent inputs (`w_equity`, `w_bonds`, `w_real_estate`, `w_gold`, `w_cash`), default `20` each (sum 100). Controller reads them into `custom_weights = { equity: .., bonds: .., ... }` (as fractions); `ModelPortfolio.assets_for` normalizes (so they need not sum exactly to 100). If all zero/blank → no Custom row.
+Params panel adds 5 inputs named `w[equity]`, `w[bonds]`, `w[real_estate]`, `w[gold]`, `w[cash]` (parsed as `params[:w]`), **blank by default** — custom is opt-in; the four presets always show. Controller reads them into `custom_weights = { equity: params.dig(:w, :equity).to_f, ... }` as relative weights (e.g. `50 / 30 / 20`); `ModelPortfolio.assets_for` normalizes (they need not sum to 100). All blank/zero → no Custom row.
 
 ## 7. Methodology / formulas panel (traceability)
 
