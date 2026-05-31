@@ -26,6 +26,12 @@
         <%= f.label :contribution, "Annual savings (#{currency})", class: "block text-xs text-secondary mb-1" %>
         <%= f.number_field :contribution, value: @contribution.round, step: 10_000, min: 0, class: "rounded-lg border border-secondary bg-container text-primary text-sm px-3 py-2 w-40" %>
       </div>
+      <% { equity: "Equity", bonds: "Bonds", real_estate: "Real estate", gold: "Gold", cash: "Cash" }.each do |bucket, label| %>
+        <div>
+          <%= label_tag "w_#{bucket}", "#{label} %", class: "block text-xs text-secondary mb-1" %>
+          <%= number_field_tag "w[#{bucket}]", (@custom_weights[bucket].positive? ? @custom_weights[bucket].round : nil), id: "w_#{bucket}", placeholder: "0", min: 0, autocomplete: "off", class: "rounded-lg border border-secondary bg-container text-primary text-sm px-2 py-2 w-20" %>
+        </div>
+      <% end %>
       <%= f.submit "Update", class: "rounded-lg bg-gray-900 text-white text-sm font-medium px-4 py-2 cursor-pointer" %>
     <% end %>
   </div>
@@ -34,7 +40,8 @@
   <div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
     <h2 class="text-lg font-medium text-primary mb-1">Real net worth (today's purchasing power)</h2>
     <p class="text-sm text-secondary mb-3">Shaded band = pessimistic→optimistic (15th–85th pct); line = neutral (median).</p>
-    <%= projection_fan_svg(@result[:years], @result[:p15], @result[:p50], @result[:p85]) %>
+    <% overlays = @comparison.reject { |r| r[:name] == "Current" }.map { |r| { label: r[:name], values: r[:median] } } %>
+    <%= projection_fan_svg(@result[:years], @result[:p15], @result[:p50], @result[:p85], overlays: overlays) %>
     <div class="flex justify-between text-xs text-subdued mt-1">
       <span><%= Date.current.year %></span>
       <span><%= Date.current.year + @horizon %></span>
@@ -53,6 +60,39 @@
       <% end %>
     </div>
     <p class="text-xs text-subdued mt-3">Today: <%= rr_money(@start_value, currency) %>. Values are real (today's purchasing power); nominal amounts would be larger because of inflation.</p>
+  </div>
+
+  <%# 3b. Portfolio comparison %>
+  <div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+    <h2 class="text-lg font-medium text-primary mb-1">Compare portfolios</h2>
+    <p class="text-sm text-secondary mb-3">Same starting capital and annual savings, different allocation. Dashed lines on the chart above. Real terms.</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-secondary text-left border-b border-secondary">
+            <th class="py-2 pr-4 font-medium">Portfolio</th>
+            <th class="py-2 pr-4 font-medium">Expected real return</th>
+            <th class="py-2 pr-4 font-medium">Pessimistic</th>
+            <th class="py-2 pr-4 font-medium">Neutral</th>
+            <th class="py-2 pr-4 font-medium">Optimistic</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @comparison.each_with_index do |r, idx| %>
+            <tr class="border-b border-secondary <%= "bg-container-inset" if r[:name] == "Current" %>">
+              <td class="py-2 pr-4 text-primary font-medium">
+                <% unless r[:name] == "Current" %><span class="inline-block w-3 border-t-2 border-dashed mr-1 align-middle" style="border-color: <%= projection_overlay_color(idx - 1) %>"></span><% end %>
+                <%= r[:name] %>
+              </td>
+              <td class="py-2 pr-4 text-secondary"><%= rr_pct_yr(r[:expected_real_return]) %></td>
+              <td class="py-2 pr-4 text-destructive"><%= rr_money(r[:terminal][:p15], currency) %></td>
+              <td class="py-2 pr-4 text-primary"><%= rr_money(r[:terminal][:p50], currency) %></td>
+              <td class="py-2 pr-4 text-success"><%= rr_money(r[:terminal][:p85], currency) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <%# 4. Social wealth tier %>
@@ -78,27 +118,31 @@
     </table>
   </div>
 
-  <%# 5. Assumptions %>
+  <%# 5. Methodology / formulas (traceable) %>
   <div class="bg-container rounded-xl border border-secondary shadow-xs p-5">
-    <h2 class="text-lg font-medium text-primary mb-1">Assumptions</h2>
-    <p class="text-sm text-secondary mb-3">Forward expected real returns per asset class (editable in <code>config/real_return/cma.yml</code>).</p>
-    <table class="w-full text-sm">
+    <h2 class="text-lg font-medium text-primary mb-1">Methodology — every number is traceable</h2>
+    <p class="text-sm text-secondary mb-3">Forward expected real returns are built block-by-block (editable in <code>config/real_return/cma.yml</code>).</p>
+    <table class="w-full text-sm mb-4">
       <thead>
         <tr class="text-secondary text-left border-b border-secondary">
           <th class="py-2 pr-4 font-medium">Asset class</th>
-          <th class="py-2 pr-4 font-medium">Expected real return</th>
-          <th class="py-2 pr-4 font-medium">Volatility (σ)</th>
+          <th class="py-2 pr-4 font-medium">Building-block formula</th>
+          <th class="py-2 pr-4 font-medium">σ</th>
         </tr>
       </thead>
       <tbody>
         <% projection_asset_classes(@assets).each do |klass| %>
           <tr class="border-b border-secondary">
-            <td class="py-2 pr-4 text-primary"><%= klass %></td>
-            <td class="py-2 pr-4 text-primary"><%= rr_pct_yr(@cma.expected_real_return(klass)) %></td>
-            <td class="py-2 pr-4 text-secondary"><%= number_to_percentage((@cma.sigma(klass) || 0) * 100, precision: 0) %></td>
+            <td class="py-2 pr-4 text-primary align-top"><%= klass %></td>
+            <td class="py-2 pr-4 text-secondary"><%= projection_formula(@cma, klass) %></td>
+            <td class="py-2 pr-4 text-secondary align-top"><%= number_to_percentage((@cma.sigma(klass) || 0) * 100, precision: 0) %></td>
           </tr>
         <% end %>
       </tbody>
     </table>
+    <div class="text-sm text-secondary space-y-1">
+      <p><span class="text-primary font-medium">Monte Carlo:</span> each asset's annual real return ~ correlated lognormal (mean = expected real return, vol = σ); 5,000 paths; bands are the 15th / 50th / 85th percentiles. Parameters: correlation ρ = 0.25, horizon <%= @horizon %>y, annual savings <%= rr_money(@contribution, currency) %>, fixed RNG seed (reproducible).</p>
+      <p><span class="text-primary font-medium">Real terms:</span> real = (1 + nominal) ÷ (1 + inflation) − 1 (Fisher). All values are today's purchasing power.</p>
+    </div>
   </div>
 <% end %>
