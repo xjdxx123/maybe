@@ -68,6 +68,13 @@ module RealReturn
       Region.cpi_area(base_currency)
     end
 
+    # Annualized inflation over the portfolio's holding period (public accessor).
+    def inflation_rate
+      return nil if start_date.nil?
+
+      @cpi.annualized(area: cpi_area, from: start_date, to: as_of)
+    end
+
     private
       def cpi_annualized
         return nil if start_date.nil?
