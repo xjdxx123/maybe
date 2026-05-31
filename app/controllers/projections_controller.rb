@@ -5,10 +5,10 @@ class ProjectionsController < ApplicationController
     @contribution = [ params[:contribution].to_f, 0.0 ].max
     @currency = Current.family.currency
 
-    projection = RealReturn::Projection.new(Current.family, as_of: Date.current)
+    @cma = RealReturn::Cma.new
+    projection = RealReturn::Projection.new(Current.family, as_of: Date.current, cma: @cma)
     @assets = projection.assets
     @result = projection.project(horizon: @horizon, annual_contribution: @contribution)
-    @cma = RealReturn::Cma.new
 
     tier = RealReturn::WealthTier.new
     @start_value = @result[:p50].first
@@ -22,7 +22,7 @@ class ProjectionsController < ApplicationController
     }
     comparison = RealReturn::PortfolioComparison.new(
       Current.family, as_of: Date.current, horizon: @horizon, annual_contribution: @contribution,
-      custom_weights: @custom_weights
+      custom_weights: @custom_weights, cma: @cma
     )
     @comparison = comparison.rows
     @methodology_classes = comparison.referenced_asset_classes

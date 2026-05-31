@@ -33,10 +33,6 @@ module ProjectionsHelper
     OVERLAY_COLORS[index % OVERLAY_COLORS.size]
   end
 
-  def projection_asset_classes(assets)
-    assets.map { |a| a[:asset_class] }.uniq
-  end
-
   # Signed percent of a building block's contribution: "+2.8%", "−1.0%", "0.0%".
   # Uses U+2212 MINUS SIGN to match the rest of the module.
   def projection_signed_pct(value)
