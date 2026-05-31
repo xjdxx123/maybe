@@ -37,6 +37,14 @@ module ProjectionsHelper
     assets.map { |a| a[:asset_class] }.uniq
   end
 
+  # Signed percent of a building block's contribution: "+2.8%", "−1.0%", "0.0%".
+  # Uses U+2212 MINUS SIGN to match the rest of the module.
+  def projection_signed_pct(value)
+    v = (value.to_f * 100).round(1)
+    sign = v.positive? ? "+" : (v.negative? ? "−" : "")
+    "#{sign}#{v.abs}%"
+  end
+
   # Human, traceable building-block formula for an asset class, e.g.
   # "dividend 2.8% − dilution 1.0% + real growth 3.5% + valuation 0.0% = 5.3%/yr". Uses Cma#components.
   def projection_formula(cma, asset_class)

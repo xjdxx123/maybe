@@ -22,4 +22,10 @@ class ProjectionsHelperTest < ActionView::TestCase
     assert_includes projection_formula(cma, "deposit"), "real rate"
     assert_includes projection_formula(cma, "gold"), "≈"
   end
+
+  test "signed pct prefixes + / − (U+2212) and shows zero unsigned" do
+    assert_equal "+2.8%", projection_signed_pct(0.028)
+    assert_equal "−1.0%", projection_signed_pct(-0.010)
+    assert_equal "0.0%", projection_signed_pct(0.0)
+  end
 end
