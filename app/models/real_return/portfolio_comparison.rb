@@ -24,8 +24,6 @@ module RealReturn
     # Ordered rows: Current (actual basket) first, then presets, then Custom (if given).
     # Each: { name:, weights: (nil for Current), expected_real_return:, median: [..], terminal: {p15:,p50:,p85:} }
     def rows
-      projection = Projection.new(@family, as_of: @as_of, cma: @cma, reference_data: @reference_data,
-                                  correlation: @correlation, paths: @paths, seed: @seed)
       current = projection.project(horizon: @horizon, annual_contribution: @annual_contribution)
       start_value = current[:p50].first
 
@@ -39,7 +37,21 @@ module RealReturn
       out
     end
 
+    # Ordered, de-duped CMA classes referenced by ANY row (Current's holdings + presets + custom),
+    # so every expected-return number shown on the page has a traceable formula. Cheap: no Monte Carlo.
+    def referenced_asset_classes
+      held = projection.assets.map { |a| a[:asset_class] }
+      preset = ModelPortfolio::PRESETS.values.flat_map { |w| ModelPortfolio.resolved(w, @currency, @cma).map { |x| x[:klass] } }
+      custom = @custom_weights ? ModelPortfolio.resolved(@custom_weights, @currency, @cma).map { |x| x[:klass] } : []
+      (held + preset + custom).uniq
+    end
+
     private
+      def projection
+        @projection ||= Projection.new(@family, as_of: @as_of, cma: @cma, reference_data: @reference_data,
+                                       correlation: @correlation, paths: @paths, seed: @seed)
+      end
+
       def alternative_row(name, weights, total)
         assets = ModelPortfolio.assets_for(weights, total: total, currency: @currency, cma: @cma)
         result = MonteCarlo.new(assets: assets, correlation: @correlation, horizon: @horizon,

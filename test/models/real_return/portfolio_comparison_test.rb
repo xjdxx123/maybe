@@ -48,4 +48,18 @@ class RealReturn::PortfolioComparisonTest < ActiveSupport::TestCase
       horizon: 10, custom_weights: { equity: 0.5, bonds: 0.5 }, cma: cma, paths: 1000, seed: 9)
     assert_includes comp.rows.map { |r| r[:name] }, "Custom"
   end
+
+  test "referenced_asset_classes unions held holdings with every model-portfolio class" do
+    comp = RealReturn::PortfolioComparison.new(family_with_property, as_of: Date.new(2024, 1, 1),
+      horizon: 10, cma: cma, paths: 500, seed: 9)
+    classes = comp.referenced_asset_classes
+
+    # held: only a property -> real_estate_cn; presets add equity / bonds / gold / cash
+    assert_includes classes, "real_estate_cn"
+    assert_includes classes, "equity_cn"
+    assert_includes classes, "govbond"
+    assert_includes classes, "gold"
+    assert_includes classes, "deposit"
+    assert_equal classes, classes.uniq
+  end
 end
