@@ -10,6 +10,16 @@ module RealReturnsHelper
     "You" => "Your portfolio"
   }.freeze
 
+  LENS_LABELS = {
+    cpi: "vs CPI (consumer)",
+    m2: "vs M2 (money supply)",
+    house_price: "vs house prices"
+  }.freeze
+
+  def rr_lens_label(lens)
+    LENS_LABELS.fetch(lens.to_sym, lens.to_s)
+  end
+
   # Annualized rate (a Float like 0.025) -> "2.5%/yr", or em dash if nil.
   def rr_pct_yr(rate)
     return "—" if rate.nil?

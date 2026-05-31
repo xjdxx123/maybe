@@ -51,6 +51,18 @@ module RealReturn
       @cpi.beats_inflation?(nominal: r, area: cpi_area, from: start_date, to: as_of)
     end
 
+    # { cpi: rate_or_nil, m2: rate_or_nil, house_price: rate_or_nil } — the portfolio's
+    # real return under each inflation lens (consumer / monetary / asset).
+    def real_returns_by_lens
+      r = nominal_return
+      return Deflator::LENSES.index_with { nil } if r.nil? || start_date.nil?
+
+      deflator = Deflator.new(currency: base_currency, reference_data: @reference_data)
+      Deflator::LENSES.index_with do |lens|
+        deflator.real_return(nominal: r, lens: lens, from: start_date, to: as_of)
+      end
+    end
+
     # Ranked [label, annualized_or_nil]: your portfolio + each benchmark + a CPI row.
     def league_table
       rows = [ [ "You", nominal_return ] ]

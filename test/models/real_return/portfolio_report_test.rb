@@ -48,4 +48,22 @@ class RealReturn::PortfolioReportTest < ActiveSupport::TestCase
   test "Family#real_return_report returns a PortfolioReport" do
     assert_instance_of RealReturn::PortfolioReport, families(:empty).real_return_report
   end
+
+  test "real_returns_by_lens returns a real return per deflator lens" do
+    family = families(:empty)
+    family.update!(currency: "CNY")
+    create_account_with_ledger(
+      account: { type: Property, currency: "CNY", balance: 0 },
+      entries: [
+        { type: "opening_anchor", date: Date.new(2010, 1, 1), balance: 1_000_000 },
+        { type: "current_anchor", date: Date.new(2012, 1, 1), balance: 1_440_000 }
+      ]
+    )
+    report = RealReturn::PortfolioReport.new(family, as_of: Date.new(2012, 1, 1), reference_data: ref)
+
+    by_lens = report.real_returns_by_lens
+    assert_equal RealReturn::Deflator::LENSES, by_lens.keys
+    # cpi lens must equal the existing real_return (both deflate by CN CPI)
+    assert_in_delta report.real_return, by_lens[:cpi], 1e-9
+  end
 end
