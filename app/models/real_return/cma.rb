@@ -37,6 +37,11 @@ module RealReturn
       a && a["sigma"]&.to_f
     end
 
+    # Raw building-block inputs for an asset class (Hash with string keys), or nil.
+    def components(asset_class)
+      data[asset_class.to_s]
+    end
+
     private
       def data
         @data ||= YAML.safe_load(File.read(@path), permitted_classes: [], permitted_symbols: [], aliases: true)

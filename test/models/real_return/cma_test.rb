@@ -28,4 +28,11 @@ class RealReturn::CmaTest < ActiveSupport::TestCase
     assert_nil cma.expected_real_return("nope")
     assert_nil cma.sigma("nope")
   end
+
+  test "components exposes the raw building-block inputs" do
+    c = cma.components("equity_cn")
+    assert_equal "equity", c["kind"]
+    assert_in_delta 0.025, c["dividend_yield"], 1e-9
+    assert_nil cma.components("nope")
+  end
 end
