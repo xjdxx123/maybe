@@ -1,1 +1,104 @@
-<%# Projection page (built in the next task) %>
+<% content_for :page_header do %>
+  <div class="space-y-1 mb-6">
+    <h1 class="text-xl lg:text-3xl font-medium text-primary">Projection</h1>
+    <p class="text-sm lg:text-base text-secondary">Where could your basket go over the next decades — and what wealth tier would it reach?</p>
+  </div>
+<% end %>
+
+<% currency = @currency %>
+
+<% if @assets.empty? %>
+  <div class="bg-container rounded-xl border border-secondary p-8 text-center">
+    <div class="text-secondary inline-flex flex-col items-center gap-2">
+      <%= icon "telescope" %>
+      <p class="max-w-md">No assets to project yet. Add a property, investment, crypto, cash, or other-asset account and your forward projection will appear here.</p>
+    </div>
+  </div>
+<% else %>
+  <%# 1. Parameters %>
+  <div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+    <%= form_with url: projection_path, method: :get, class: "flex flex-wrap items-end gap-4" do |f| %>
+      <div>
+        <%= f.label :years, "Horizon (years)", class: "block text-xs text-secondary mb-1" %>
+        <%= f.select :years, options_for_select([ 10, 15, 20, 30 ], @horizon), {}, class: "rounded-lg border border-secondary bg-container text-primary text-sm px-3 py-2" %>
+      </div>
+      <div>
+        <%= f.label :contribution, "Annual savings (#{currency})", class: "block text-xs text-secondary mb-1" %>
+        <%= f.number_field :contribution, value: @contribution.round, step: 10_000, min: 0, class: "rounded-lg border border-secondary bg-container text-primary text-sm px-3 py-2 w-40" %>
+      </div>
+      <%= f.submit "Update", class: "rounded-lg bg-gray-900 text-white text-sm font-medium px-4 py-2 cursor-pointer" %>
+    <% end %>
+  </div>
+
+  <%# 2. Fan chart %>
+  <div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+    <h2 class="text-lg font-medium text-primary mb-1">Real net worth (today's purchasing power)</h2>
+    <p class="text-sm text-secondary mb-3">Shaded band = pessimistic→optimistic (15th–85th pct); line = neutral (median).</p>
+    <%= projection_fan_svg(@result[:years], @result[:p15], @result[:p50], @result[:p85]) %>
+    <div class="flex justify-between text-xs text-subdued mt-1">
+      <span><%= Date.current.year %></span>
+      <span><%= Date.current.year + @horizon %></span>
+    </div>
+  </div>
+
+  <%# 3. Terminal figures %>
+  <div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+    <h2 class="text-lg font-medium text-primary mb-3">In <%= Date.current.year + @horizon %> (real)</h2>
+    <div class="grid grid-cols-3 gap-4">
+      <% [ [ "Pessimistic", @result[:p15].last, "text-destructive" ], [ "Neutral", @result[:p50].last, "text-primary" ], [ "Optimistic", @result[:p85].last, "text-success" ] ].each do |label, value, color| %>
+        <div>
+          <p class="text-xs text-secondary"><%= label %></p>
+          <p class="text-lg font-medium <%= color %>"><%= rr_money(value, currency) %></p>
+        </div>
+      <% end %>
+    </div>
+    <p class="text-xs text-subdued mt-3">Today: <%= rr_money(@start_value, currency) %>. Values are real (today's purchasing power); nominal amounts would be larger because of inflation.</p>
+  </div>
+
+  <%# 4. Social wealth tier %>
+  <div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+    <h2 class="text-lg font-medium text-primary mb-3">Wealth tier</h2>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-secondary text-left border-b border-secondary">
+          <th class="py-2 pr-4 font-medium"></th>
+          <th class="py-2 pr-4 font-medium">Today</th>
+          <th class="py-2 pr-4 font-medium">Projected (neutral)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% [ [ "China", :cn ], [ "Global", :global ] ].each do |name, key| %>
+          <tr class="border-b border-secondary">
+            <td class="py-2 pr-4 text-secondary"><%= name %></td>
+            <td class="py-2 pr-4 text-primary"><%= @tier_now[key][:label] %> <span class="text-subdued">(<%= @tier_now[key][:percentile]&.round(1) %>%)</span></td>
+            <td class="py-2 pr-4 text-primary"><%= @tier_future[key][:label] %> <span class="text-subdued">(<%= @tier_future[key][:percentile]&.round(1) %>%)</span></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <%# 5. Assumptions %>
+  <div class="bg-container rounded-xl border border-secondary shadow-xs p-5">
+    <h2 class="text-lg font-medium text-primary mb-1">Assumptions</h2>
+    <p class="text-sm text-secondary mb-3">Forward expected real returns per asset class (editable in <code>config/real_return/cma.yml</code>).</p>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-secondary text-left border-b border-secondary">
+          <th class="py-2 pr-4 font-medium">Asset class</th>
+          <th class="py-2 pr-4 font-medium">Expected real return</th>
+          <th class="py-2 pr-4 font-medium">Volatility (σ)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% projection_asset_classes(@assets).each do |klass| %>
+          <tr class="border-b border-secondary">
+            <td class="py-2 pr-4 text-primary"><%= klass %></td>
+            <td class="py-2 pr-4 text-primary"><%= rr_pct_yr(@cma.expected_real_return(klass)) %></td>
+            <td class="py-2 pr-4 text-secondary"><%= number_to_percentage((@cma.sigma(klass) || 0) * 100, precision: 0) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
