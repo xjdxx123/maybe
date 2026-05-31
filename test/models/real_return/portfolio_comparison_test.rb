@@ -62,4 +62,15 @@ class RealReturn::PortfolioComparisonTest < ActiveSupport::TestCase
     assert_includes classes, "deposit"
     assert_equal classes, classes.uniq
   end
+
+  test "referenced_asset_classes includes custom-weight classes and stays unique" do
+    comp = RealReturn::PortfolioComparison.new(family_with_property, as_of: Date.new(2024, 1, 1),
+      horizon: 10, custom_weights: { equity: 0.5, bonds: 0.5 }, cma: cma, paths: 500, seed: 9)
+    classes = comp.referenced_asset_classes
+
+    # custom equity overlaps the presets -> must still appear exactly once
+    assert_includes classes, "equity_cn"
+    assert_includes classes, "govbond"
+    assert_equal classes, classes.uniq
+  end
 end

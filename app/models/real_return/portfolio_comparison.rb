@@ -31,22 +31,25 @@ module RealReturn
       return out if start_value <= 0
 
       ModelPortfolio::PRESETS.each { |name, weights| out << alternative_row(name, weights, start_value) }
-      if @custom_weights && @custom_weights.values.sum { |w| w.to_f } > 0
-        out << alternative_row("Custom", @custom_weights, start_value)
-      end
+      out << alternative_row("Custom", @custom_weights, start_value) if custom_weights_present?
       out
     end
 
     # Ordered, de-duped CMA classes referenced by ANY row (Current's holdings + presets + custom),
-    # so every expected-return number shown on the page has a traceable formula. Cheap: no Monte Carlo.
+    # so every expected-return number shown on the page has a traceable formula.
+    # No additional Monte Carlo — reuses the memoized projection.
     def referenced_asset_classes
       held = projection.assets.map { |a| a[:asset_class] }
       preset = ModelPortfolio::PRESETS.values.flat_map { |w| ModelPortfolio.resolved(w, @currency, @cma).map { |x| x[:klass] } }
-      custom = @custom_weights ? ModelPortfolio.resolved(@custom_weights, @currency, @cma).map { |x| x[:klass] } : []
+      custom = custom_weights_present? ? ModelPortfolio.resolved(@custom_weights, @currency, @cma).map { |x| x[:klass] } : []
       (held + preset + custom).uniq
     end
 
     private
+      def custom_weights_present?
+        @custom_weights && @custom_weights.values.sum { |w| w.to_f } > 0
+      end
+
       def projection
         @projection ||= Projection.new(@family, as_of: @as_of, cma: @cma, reference_data: @reference_data,
                                        correlation: @correlation, paths: @paths, seed: @seed)
