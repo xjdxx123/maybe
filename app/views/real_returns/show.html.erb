@@ -1,1 +1,93 @@
-<%# Real Return page (built in the next task) %>
+<% content_for :page_header do %>
+  <div class="space-y-1 mb-6">
+    <h1 class="text-xl lg:text-3xl font-medium text-primary">Real Return</h1>
+    <p class="text-sm lg:text-base text-secondary">Did your investment decisions beat inflation — and what was the opportunity cost?</p>
+  </div>
+<% end %>
+
+<% currency = @report.base_currency %>
+
+<% if @analyses.empty? %>
+  <div class="bg-container rounded-xl border border-secondary p-8 text-center">
+    <div class="text-secondary inline-flex flex-col items-center gap-2">
+      <%= icon "trending-up" %>
+      <p class="max-w-md">No investment-decision assets yet. Add a property, investment, or crypto account with a purchase price and date, and your real return will appear here.</p>
+    </div>
+  </div>
+<% else %>
+  <%# 1. Portfolio overview %>
+  <div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+    <div class="flex items-start justify-between flex-wrap gap-4">
+      <div>
+        <p class="text-sm text-secondary">Portfolio real return <span class="text-subdued">(after <%= @report.cpi_area %> inflation)</span></p>
+        <p class="text-3xl font-medium <%= @report.real_return.to_f >= 0 ? "text-success" : "text-destructive" %>">
+          <%= rr_pct_yr(@report.real_return) %>
+        </p>
+        <p class="text-sm text-secondary mt-1">
+          Nominal <%= rr_pct_yr(@report.nominal_return) %> · Inflation <%= rr_pct_yr(@report.inflation_rate) %>
+        </p>
+      </div>
+      <% unless @report.real_return.nil? %>
+        <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-secondary text-sm font-medium <%= @report.beats_inflation? ? "text-success" : "text-destructive" %>">
+          <%= icon(@report.beats_inflation? ? "check" : "x", color: "current") %>
+          <%= @report.beats_inflation? ? "Beat inflation" : "Lost to inflation" %>
+        </span>
+      <% end %>
+    </div>
+  </div>
+
+  <%# 2. Per-asset scorecard %>
+  <div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+    <h2 class="text-lg font-medium text-primary mb-3">By asset</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-secondary text-left border-b border-secondary">
+            <th class="py-2 pr-4 font-medium">Asset</th>
+            <th class="py-2 pr-4 font-medium">Nominal</th>
+            <th class="py-2 pr-4 font-medium">Real</th>
+            <th class="py-2 pr-4 font-medium">vs inflation</th>
+            <th class="py-2 pr-4 font-medium">Best alternative</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @analyses.each do |a| %>
+            <% best_key, best_rate = a.benchmark_returns.compact.max_by { |_k, v| v } %>
+            <tr class="border-b border-secondary">
+              <td class="py-2 pr-4 text-primary">
+                <%= a.account.name %>
+                <% if a.estimated? %>
+                  <span class="ml-1 text-xs text-subdued">(index-estimated)</span>
+                <% end %>
+              </td>
+              <td class="py-2 pr-4 text-primary"><%= rr_pct_yr(a.nominal_return) %></td>
+              <td class="py-2 pr-4 <%= a.real_return.to_f >= 0 ? "text-success" : "text-destructive" %>"><%= rr_pct_yr(a.real_return) %></td>
+              <td class="py-2 pr-4">
+                <% unless a.beats_inflation?.nil? %>
+                  <span class="<%= a.beats_inflation? ? "text-success" : "text-destructive" %>"><%= a.beats_inflation? ? "✓" : "✗" %></span>
+                <% end %>
+              </td>
+              <td class="py-2 pr-4 text-secondary">
+                <%= best_key ? "#{rr_benchmark_label(best_key)} #{rr_pct_yr(best_rate)}" : "—" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <%# 3. Benchmark league (opportunity cost) %>
+  <div class="bg-container rounded-xl border border-secondary shadow-xs p-5">
+    <h2 class="text-lg font-medium text-primary mb-1">Opportunity cost</h2>
+    <p class="text-sm text-secondary mb-3">Same money, same dates — annualized return by vehicle.</p>
+    <ul class="space-y-1">
+      <% @report.league_table.each do |label, rate| %>
+        <li class="flex items-center justify-between py-1.5 px-2 rounded-lg <%= label == "You" ? "bg-container-inset" : "" %>">
+          <span class="<%= label == "You" ? "text-primary font-medium" : "text-secondary" %>"><%= rr_benchmark_label(label) %></span>
+          <span class="<%= label == "You" ? "text-primary font-medium" : "text-secondary" %>"><%= rr_pct_yr(rate) %></span>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
