@@ -45,8 +45,15 @@ module RealReturn
     end
 
     # Current value of this account in base currency (the projection's starting point). nil if none.
+    # Unlike terminal_value (return analysis), this just takes the latest known valuation / holdings,
+    # so single-snapshot assets (a lone current valuation, e.g. cash/insurance) still report their value.
     def current_value
-      terminal_value
+      if MARKET_PRICED.include?(account.accountable_type)
+        holdings_value
+      else
+        latest = valuations.last
+        latest && to_base(latest.amount, latest.currency, latest.date)
+      end
     end
 
     def nominal_return

@@ -51,4 +51,21 @@ class RealReturn::ProjectionTest < ActiveSupport::TestCase
     out = RealReturn::Projection.new(families(:empty), as_of: Date.current, cma: cma).project(horizon: 10)
     assert_equal Array.new(11, 0.0), out[:p50]
   end
+
+  test "includes single-snapshot OtherAssets and Depository cash in the basket" do
+    family = families(:empty)
+    family.update!(currency: "CNY")
+    create_account_with_ledger(
+      account: { type: OtherAsset, currency: "CNY", balance: 0 },
+      entries: [ { type: "current_anchor", date: Date.new(2024, 1, 1), balance: 1_500_000 } ]
+    )
+    create_account_with_ledger(
+      account: { type: Depository, currency: "CNY", balance: 0 },
+      entries: [ { type: "current_anchor", date: Date.new(2024, 1, 1), balance: 600_000 } ]
+    )
+    projection = RealReturn::Projection.new(family, as_of: Date.new(2024, 1, 1), cma: cma)
+
+    assert_equal %w[deposit other], projection.assets.map { |a| a[:asset_class] }.sort
+    assert_in_delta 2_100_000.0, projection.assets.sum { |a| a[:value] }, 1.0
+  end
 end
