@@ -4,8 +4,8 @@ module RealReturnsHelper
     "csi300" => "CSI 300",
     "gold" => "Gold",
     "deposit" => "Bank deposit",
-    "govbond" => "Gov bond",
-    "real_estate" => "Real estate",
+    "govbond" => "Bonds (CN credit)",
+    "real_estate" => "Real estate (approx)",
     "cpi" => "Inflation (CPI)",
     "You" => "Your portfolio"
   }.freeze

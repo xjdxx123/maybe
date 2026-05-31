@@ -2,9 +2,9 @@
 # years are used (annualized inflation = (idx[t1]/idx[t0])**(365/days) - 1).
 # `metadata` is reserved and never read as an area.
 metadata:
-  source: "US: U.S. BLS CPI-U annual average. CN: World Bank FP.CPI.TOTL (2010=100). WLD: approximated by US CPI-U pending a dedicated world series."
+  source: "US: U.S. BLS CPI-U annual average (through 2025). CN: World Bank FP.CPI.TOTL (2010=100), 2000-2024 — all REAL fetched. WLD: US CPI-U as a documented proxy (the World Bank publishes no aggregate world CPI index)."
   as_of: "2025-12-31"
-  note: "CN 2025 is an estimate (~0.5%); official World Bank value pending."
+  note: "All values are fetched (no estimates). Years beyond a series' last data point clamp to the last value."
 
 US:
   2000: 172.2
@@ -60,7 +60,6 @@ CN:
   2022: 131.92
   2023: 132.23
   2024: 132.52
-  2025: 133.18
 
 # WLD: proxy = US CPI-U (documented approximation; used only for non-CN/US base currencies).
 WLD:
