@@ -26,6 +26,14 @@
         <p class="text-sm text-secondary mt-1">
           Nominal <%= rr_pct_yr(@report.nominal_return) %> · Inflation <%= rr_pct_yr(@report.inflation_rate) %>
         </p>
+        <div class="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          <% @report.real_returns_by_lens.each do |lens, rate| %>
+            <span class="text-secondary">
+              <%= rr_lens_label(lens) %>:
+              <span class="font-medium <%= rate.to_f >= 0 ? "text-success" : "text-destructive" %>"><%= rr_pct_yr(rate) %></span>
+            </span>
+          <% end %>
+        </div>
       </div>
       <% unless @report.real_return.nil? %>
         <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-secondary text-sm font-medium <%= @report.beats_inflation? ? "text-success" : "text-destructive" %>">
