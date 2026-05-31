@@ -9,20 +9,6 @@ class ProjectionsHelperTest < ActionView::TestCase
     assert svg.html_safe?
   end
 
-  test "formula renders the building-block arithmetic for an equity class" do
-    cma = RealReturn::Cma.new(path: Rails.root.join("test", "fixtures", "files", "real_return", "cma.sample.yml"))
-    str = projection_formula(cma, "equity_cn")
-    assert_includes str, "="
-    assert_includes str, "%"
-  end
-
-  test "formula handles bond / cash / gold kinds" do
-    cma = RealReturn::Cma.new(path: Rails.root.join("test", "fixtures", "files", "real_return", "cma.sample.yml"))
-    assert_includes projection_formula(cma, "govbond"), "real yield"
-    assert_includes projection_formula(cma, "deposit"), "real rate"
-    assert_includes projection_formula(cma, "gold"), "≈"
-  end
-
   test "signed pct prefixes + / − (U+2212) and shows zero unsigned" do
     assert_equal "+2.8%", projection_signed_pct(0.028)
     assert_equal "−1.0%", projection_signed_pct(-0.010)

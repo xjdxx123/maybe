@@ -44,30 +44,4 @@ module ProjectionsHelper
     sign = v.positive? ? "+" : (v.negative? ? "−" : "")
     "#{sign}#{v.abs}%"
   end
-
-  # Human, traceable building-block formula for an asset class, e.g.
-  # "dividend 2.8% − dilution 1.0% + real growth 3.5% + valuation 0.0% = 5.3%/yr". Uses Cma#components.
-  def projection_formula(cma, asset_class)
-    c = cma.components(asset_class)
-    er = cma.expected_real_return(asset_class)
-    return "—" if c.nil? || er.nil?
-
-    pct = ->(v) { "#{(v.to_f * 100).round(1)}%" }
-    body =
-      case c["kind"]
-      when "equity"
-        "dividend #{pct.call(c['dividend_yield'])} − dilution #{pct.call(c['net_dilution'])} + real growth #{pct.call(c['real_earnings_growth'])} + valuation #{pct.call(c['valuation_reversion'])}"
-      when "real_estate"
-        "rental yield #{pct.call(c['net_rental_yield'])} + real rent growth #{pct.call(c['real_rent_growth'])} + valuation #{pct.call(c['valuation_reversion'])}"
-      when "bond"
-        "real yield #{pct.call(c['real_yield'])}"
-      when "cash"
-        "real rate #{pct.call(c['real_rate'])}"
-      when "gold"
-        "golden constant ≈ #{pct.call(c['real_return'])} (gold's long-run real return ≈ 0)"
-      else
-        "assumption ≈ #{pct.call(c['real_return'])}"
-      end
-    "#{body} = #{pct.call(er)}/yr"
-  end
 end
