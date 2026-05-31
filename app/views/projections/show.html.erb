@@ -121,25 +121,60 @@
   <%# 5. Methodology / formulas (traceable) %>
   <div class="bg-container rounded-xl border border-secondary shadow-xs p-5">
     <h2 class="text-lg font-medium text-primary mb-1">Methodology — every number is traceable</h2>
-    <p class="text-sm text-secondary mb-3">Forward expected real returns are built block-by-block (editable in <code>config/real_return/cma.yml</code>).</p>
-    <table class="w-full text-sm mb-4">
-      <thead>
-        <tr class="text-secondary text-left border-b border-secondary">
-          <th class="py-2 pr-4 font-medium">Asset class</th>
-          <th class="py-2 pr-4 font-medium">Building-block formula</th>
-          <th class="py-2 pr-4 font-medium">σ</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% projection_asset_classes(@assets).each do |klass| %>
-          <tr class="border-b border-secondary">
-            <td class="py-2 pr-4 text-primary align-top"><%= klass %></td>
-            <td class="py-2 pr-4 text-secondary"><%= projection_formula(@cma, klass) %></td>
-            <td class="py-2 pr-4 text-secondary align-top"><%= number_to_percentage((@cma.sigma(klass) || 0) * 100, precision: 0) %></td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+    <p class="text-sm text-secondary mb-1">Forward expected real returns are built block-by-block (editable in <code>config/real_return/cma.yml</code>).</p>
+    <% if @cma.metadata["as_of"].present? %>
+      <p class="text-xs text-subdued mb-2">As of <%= @cma.metadata["as_of"] %>. <%= @cma.metadata["approach"] %></p>
+    <% end %>
+    <p class="text-xs text-secondary mb-3">
+      <span class="text-primary">●</span> Anchored to data
+      <span class="ml-3 text-subdued">○</span> Assumption (judgment)
+    </p>
+
+    <div class="space-y-2 mb-4">
+      <% @methodology_classes.each do |klass| %>
+        <details class="border border-secondary rounded-lg">
+          <summary class="flex justify-between items-center gap-2 px-3 py-2 cursor-pointer text-sm">
+            <span class="text-primary font-medium"><%= klass %></span>
+            <span class="text-secondary"><%= rr_pct_yr(@cma.expected_real_return(klass)) %> · σ <%= number_to_percentage((@cma.sigma(klass) || 0) * 100, precision: 0) %></span>
+          </summary>
+          <div class="px-3 pb-3 overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-secondary text-left border-b border-secondary">
+                  <th class="py-1 pr-4 font-medium">Input</th>
+                  <th class="py-1 pr-4 font-medium">Contribution</th>
+                  <th class="py-1 pr-4 font-medium">Type</th>
+                  <th class="py-1 font-medium">Source / anchor</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @cma.breakdown(klass).each do |c| %>
+                  <tr class="border-b border-secondary">
+                    <td class="py-1 pr-4 text-primary align-top"><%= c[:label] %></td>
+                    <td class="py-1 pr-4 text-secondary align-top whitespace-nowrap"><%= projection_signed_pct(c[:contribution]) %></td>
+                    <td class="py-1 pr-4 align-top whitespace-nowrap">
+                      <% if c[:type] == :observable %>
+                        <span class="text-primary">● Anchored</span>
+                      <% else %>
+                        <span class="text-subdued">○ Assumption</span>
+                      <% end %>
+                    </td>
+                    <td class="py-1 text-secondary align-top"><%= c[:source] || "—" %></td>
+                  </tr>
+                <% end %>
+                <tr>
+                  <td class="py-1 pr-4 text-primary font-medium">= Expected real return</td>
+                  <td class="py-1 pr-4 text-primary font-medium whitespace-nowrap"><%= rr_pct_yr(@cma.expected_real_return(klass)) %></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      <% end %>
+    </div>
+
     <div class="text-sm text-secondary space-y-1">
       <p><span class="text-primary font-medium">Monte Carlo:</span> each asset's annual real return ~ correlated lognormal (mean = expected real return, vol = σ); 5,000 paths; bands are the 15th / 50th / 85th percentiles. Parameters: correlation ρ = 0.25, horizon <%= @horizon %>y, annual savings <%= rr_money(@contribution, currency) %>, fixed RNG seed (reproducible).</p>
       <p><span class="text-primary font-medium">Real terms:</span> real = (1 + nominal) ÷ (1 + inflation) − 1 (Fisher). All values are today's purchasing power.</p>
