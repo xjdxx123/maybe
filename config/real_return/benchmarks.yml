@@ -1,0 +1,207 @@
+# Annual benchmark levels. Only ratios between years are used (growth = level[t1]/level[t0]).
+# Convention: each level is anchored to ~Jan 1 of its labeled year. Series sourced at
+# year-end (gold, CSI 300) are shifted +1 year so a "Dec YYYY" close anchors "Jan YYYY+1".
+# `metadata` is reserved and never read as a benchmark key. `real_estate` is region-keyed.
+metadata:
+  source: >
+    S&P 500: multpl.com year-anchored index levels.
+    CSI 300: Wikipedia annual year-end closes (shifted +1y to Jan-1 convention; series begins 2005).
+    Gold: LBMA USD/oz year-end via datahub/gold-prices (shifted +1y).
+    deposit: cumulative growth index of the PBoC benchmark 1-year deposit rate (documented reference rates; live table paywalled).
+    govbond: cumulative growth index of a ~China 10-year government bond yield proxy (documented reference rates; live table paywalled).
+    real_estate: approximate national home-price indices (US Case-Shiller-style; CN NBS 70-city composite). COARSE — live sources blocked (FRED 403); treat as directional, not precise.
+  as_of: "2025-12-31"
+
+sp500:
+  2000: 1425.59
+  2001: 1335.63
+  2002: 1140.21
+  2003: 895.84
+  2004: 1132.52
+  2005: 1181.41
+  2006: 1278.73
+  2007: 1424.16
+  2008: 1378.76
+  2009: 865.58
+  2010: 1123.58
+  2011: 1282.62
+  2012: 1300.58
+  2013: 1480.40
+  2014: 1822.36
+  2015: 2028.18
+  2016: 1918.60
+  2017: 2275.12
+  2018: 2789.80
+  2019: 2607.39
+  2020: 3278.20
+  2021: 3793.75
+  2022: 4573.82
+  2023: 3960.66
+  2024: 4804.49
+  2025: 5979.52
+
+csi300:
+  2006: 923.45
+  2007: 2041.05
+  2008: 5338.28
+  2009: 1817.72
+  2010: 3575.68
+  2011: 3128.26
+  2012: 2345.74
+  2013: 2522.95
+  2014: 2330.03
+  2015: 3533.71
+  2016: 3731.00
+  2017: 3310.08
+  2018: 4030.85
+  2019: 3010.65
+  2020: 4096.58
+  2021: 5211.29
+  2022: 4940.37
+  2023: 3871.64
+  2024: 3431.11
+  2025: 3934.91
+
+gold:
+  2001: 271.45
+  2002: 275.85
+  2003: 331.92
+  2004: 406.95
+  2005: 442.08
+  2006: 510.10
+  2007: 629.79
+  2008: 803.20
+  2009: 816.09
+  2010: 1134.72
+  2011: 1390.55
+  2012: 1639.97
+  2013: 1684.76
+  2014: 1221.51
+  2015: 1200.62
+  2016: 1075.74
+  2017: 1157.36
+  2018: 1264.45
+  2019: 1250.40
+  2020: 1479.13
+  2021: 1858.42
+  2022: 1790.43
+  2023: 1797.55
+  2024: 2026.18
+  2025: 2648.01
+  2026: 4309.23
+
+# Cumulative growth index of a rolling 1-year PBoC benchmark deposit (base 2000 = 1.0).
+deposit:
+  2000: 1.0000
+  2001: 1.0225
+  2002: 1.0455
+  2003: 1.0662
+  2004: 1.0873
+  2005: 1.1118
+  2006: 1.1368
+  2007: 1.1655
+  2008: 1.2106
+  2009: 1.2378
+  2010: 1.2657
+  2011: 1.2973
+  2012: 1.3427
+  2013: 1.3830
+  2014: 1.4245
+  2015: 1.4637
+  2016: 1.4856
+  2017: 1.5079
+  2018: 1.5305
+  2019: 1.5535
+  2020: 1.5768
+  2021: 1.6004
+  2022: 1.6244
+  2023: 1.6512
+  2024: 1.6760
+  2025: 1.6986
+
+# Cumulative growth index of a ~China 10-year government bond yield proxy (base 2000 = 1.0).
+govbond:
+  2000: 1.0000
+  2001: 1.0300
+  2002: 1.0609
+  2003: 1.0885
+  2004: 1.1211
+  2005: 1.1749
+  2006: 1.2125
+  2007: 1.2489
+  2008: 1.3039
+  2009: 1.3404
+  2010: 1.3860
+  2011: 1.4398
+  2012: 1.4902
+  2013: 1.5424
+  2014: 1.6133
+  2015: 1.6714
+  2016: 1.7199
+  2017: 1.7715
+  2018: 1.8405
+  2019: 1.9013
+  2020: 1.9602
+  2021: 2.0210
+  2022: 2.0776
+  2023: 2.1358
+  2024: 2.1911
+  2025: 2.2349
+
+real_estate:
+  # US: approximate Case-Shiller national home price index (2000 = 100).
+  US:
+    2000: 100
+    2001: 107
+    2002: 115
+    2003: 124
+    2004: 139
+    2005: 159
+    2006: 183
+    2007: 177
+    2008: 155
+    2009: 146
+    2010: 138
+    2011: 134
+    2012: 136
+    2013: 151
+    2014: 161
+    2015: 171
+    2016: 181
+    2017: 192
+    2018: 204
+    2019: 212
+    2020: 225
+    2021: 267
+    2022: 298
+    2023: 308
+    2024: 325
+    2025: 335
+  # CN: approximate NBS 70-city national new-home composite (2000 = 100). COARSE.
+  CN:
+    2000: 100
+    2001: 104
+    2002: 108
+    2003: 113
+    2004: 128
+    2005: 140
+    2006: 148
+    2007: 170
+    2008: 172
+    2009: 200
+    2010: 230
+    2011: 240
+    2012: 248
+    2013: 270
+    2014: 268
+    2015: 275
+    2016: 310
+    2017: 340
+    2018: 360
+    2019: 380
+    2020: 395
+    2021: 405
+    2022: 390
+    2023: 375
+    2024: 355
+    2025: 345
