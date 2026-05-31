@@ -44,6 +44,11 @@ module RealReturn
       contributions.any? && (terminal_value&.positive? || false)
     end
 
+    # Current value of this account in base currency (the projection's starting point). nil if none.
+    def current_value
+      terminal_value
+    end
+
     def nominal_return
       Xirr.compute(flows)
     end
