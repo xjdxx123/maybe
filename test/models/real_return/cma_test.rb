@@ -76,4 +76,45 @@ class RealReturn::CmaTest < ActiveSupport::TestCase
     # sample fixture has no metadata block
     assert_equal({}, cma.metadata)
   end
+
+  test "valuation amortizes over the horizon (shorter horizon = bigger annual drag)" do
+    drag10 = cma.breakdown("equity_glide", horizon: 10).find { |c| c[:key] == "valuation_reversion" }[:contribution]
+    drag30 = cma.breakdown("equity_glide", horizon: 30).find { |c| c[:key] == "valuation_reversion" }[:contribution]
+    assert_in_delta((20.0 / 30.0)**(1.0 / 10) - 1.0, drag10, 1e-9)
+    assert_in_delta((20.0 / 30.0)**(1.0 / 30) - 1.0, drag30, 1e-9)
+    assert drag10 < drag30, "shorter horizon should have a larger (more negative) annual drag"
+  end
+
+  test "projection_inputs glides growth start->end and exposes regime offsets" do
+    pi = cma.projection_inputs("equity_glide", horizon: 30)
+    val = (20.0 / 30.0)**(1.0 / 30) - 1.0
+    assert_in_delta 0.020 + 0.040 + val, pi[:mean_start], 1e-9
+    assert_in_delta 0.020 + 0.020 + val, pi[:mean_end], 1e-9
+    assert_in_delta(-0.03, pi[:regime_offsets]["bear"], 1e-9)
+    assert_in_delta 0.02, pi[:regime_offsets]["bull"], 1e-9
+    assert_in_delta 0.18, pi[:sigma], 1e-9
+  end
+
+  test "regimes returns the global mixture" do
+    assert_in_delta 0.25, cma.regimes["bear"], 1e-9
+    assert_in_delta 0.60, cma.regimes["base"], 1e-9
+  end
+
+  test "expected_real_return(horizon:) is the base start/end average; breakdown sums to it" do
+    er = cma.expected_real_return("equity_glide", horizon: 30)
+    pi = cma.projection_inputs("equity_glide", horizon: 30)
+    assert_in_delta (pi[:mean_start] + pi[:mean_end]) / 2.0, er, 1e-9
+    assert_in_delta er, cma.breakdown("equity_glide", horizon: 30).sum { |c| c[:contribution] }, 1e-9
+  end
+
+  test "breakdown annotates glide and valuation" do
+    bd = cma.breakdown("equity_glide", horizon: 30)
+    assert_equal "4.0% → 2.0%", bd.find { |c| c[:key] == "real_earnings_growth" }[:note]
+    assert_equal "30→20 over 30y", bd.find { |c| c[:key] == "valuation_reversion" }[:note]
+  end
+
+  test "backward-compatible: no-horizon expected_real_return unchanged for fixed-reversion classes" do
+    assert_in_delta 0.045, cma.expected_real_return("equity_cn"), 1e-9
+    assert_equal({}, cma.projection_inputs("equity_cn", horizon: 30)[:regime_offsets])
+  end
 end

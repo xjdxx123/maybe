@@ -1,3 +1,8 @@
+regimes:
+  base: 0.60
+  bear: 0.25
+  bull: 0.15
+
 equity_cn:
   kind: equity
   dividend_yield: 0.025
@@ -29,3 +34,17 @@ other:
   kind: other
   real_return: 0.010
   sigma: 0.05
+equity_glide:
+  kind: equity
+  dividend_yield: 0.020
+  net_dilution: 0.000
+  real_earnings_growth: 0.040
+  sigma: 0.18
+  valuation:
+    current: 30
+    target: 20
+  glide:
+    real_earnings_growth: 0.020
+  regimes:
+    bear: -0.03
+    bull: 0.02
