@@ -5,7 +5,7 @@ module RealReturnsHelper
     "gold" => "Gold",
     "deposit" => "Bank deposit",
     "govbond" => "Bonds (CN credit)",
-    "real_estate" => "Real estate (approx)",
+    "real_estate" => "Real estate",
     "cpi" => "Inflation (CPI)",
     "You" => "Your portfolio"
   }.freeze

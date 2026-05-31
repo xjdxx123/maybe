@@ -9,7 +9,7 @@ metadata:
     Gold: LBMA USD/oz year-end via datahub/gold-prices (shifted +1y).
     deposit: cumulative growth index built from the World Bank China DEPOSIT interest rate (FR.INR.DPST), 2000-2024. REAL fetched data.
     govbond: cumulative growth index built from the World Bank China LENDING interest rate (FR.INR.LEND), 2000-2024, used as a fixed-income/credit proxy (no free bot-accessible 10y gov-bond series). REAL fetched data.
-    real_estate: APPROXIMATE national home-price indices (US Case-Shiller-style; CN NBS 70-city composite). NOT fetched — FRED & BIS block automated download and the World Bank carries no house-price index. Treat as directional/placeholder pending a real source.
+    real_estate: REAL fetched. CN = BIS nominal RPPI Q.CN.N.628 (via DBnomics), 2006-2025. US = multpl.com Case-Shiller nominal, 2000-2017 (recent years pending; reader clamps).
   as_of: "2025-12-31"
 
 sp500:
@@ -150,59 +150,47 @@ govbond:
   2025: 3.5885
 
 real_estate:
-  # US: approximate Case-Shiller national home price index (2000 = 100).
+  # US: Case-Shiller Home Price Index (nominal) via multpl.com, 2000-2017. REAL fetched.
+  # Recent years (2018+) pending a fuller fetch; the reader clamps to the last value.
   US:
-    2000: 100
-    2001: 107
-    2002: 115
-    2003: 124
-    2004: 139
-    2005: 159
-    2006: 183
-    2007: 177
-    2008: 155
-    2009: 146
-    2010: 138
-    2011: 134
-    2012: 136
-    2013: 151
-    2014: 161
-    2015: 171
-    2016: 181
-    2017: 192
-    2018: 204
-    2019: 212
-    2020: 225
-    2021: 267
-    2022: 298
-    2023: 308
-    2024: 325
-    2025: 335
-  # CN: approximate NBS 70-city national new-home composite (2000 = 100). COARSE.
+    2000: 108.79
+    2001: 116.06
+    2002: 127.15
+    2003: 139.63
+    2004: 158.67
+    2005: 180.11
+    2006: 183.24
+    2007: 173.35
+    2008: 152.56
+    2009: 146.68
+    2010: 140.63
+    2011: 135.16
+    2012: 143.89
+    2013: 159.33
+    2014: 166.52
+    2015: 175.24
+    2016: 184.69
+    2017: 195.63
+  # CN: BIS nominal residential property price index Q.CN.N.628 (2010=100) via DBnomics.
+  # Q4 values shifted +1y to the Jan-1 convention. REAL fetched. Shows the 2021+ correction.
   CN:
-    2000: 100
-    2001: 104
-    2002: 108
-    2003: 113
-    2004: 128
-    2005: 140
-    2006: 148
-    2007: 170
-    2008: 172
-    2009: 200
-    2010: 230
-    2011: 240
-    2012: 248
-    2013: 270
-    2014: 268
-    2015: 275
-    2016: 310
-    2017: 340
-    2018: 360
-    2019: 380
-    2020: 395
-    2021: 405
-    2022: 390
-    2023: 375
-    2024: 355
-    2025: 345
+    2006: 77.92
+    2007: 81.82
+    2008: 89.15
+    2009: 90.74
+    2010: 94.76
+    2011: 101.86
+    2012: 104.20
+    2013: 103.66
+    2014: 113.06
+    2015: 109.16
+    2016: 108.84
+    2017: 119.20
+    2018: 125.15
+    2019: 135.44
+    2020: 140.26
+    2021: 145.40
+    2022: 142.23
+    2023: 138.43
+    2024: 131.53
+    2025: 122.70
