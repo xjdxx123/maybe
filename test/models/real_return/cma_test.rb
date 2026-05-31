@@ -25,6 +25,7 @@ class RealReturn::CmaTest < ActiveSupport::TestCase
   test "sigma and asset_classes are exposed; unknown class is nil" do
     assert_in_delta 0.20, cma.sigma("equity_cn"), 1e-9
     assert_includes cma.asset_classes, "gold"
+    refute_includes cma.asset_classes, "regimes"
     assert_nil cma.expected_real_return("nope")
     assert_nil cma.expected_real_return("nope", horizon: 30)
     assert_nil cma.sigma("nope")
