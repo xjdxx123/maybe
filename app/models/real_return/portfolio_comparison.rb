@@ -27,7 +27,7 @@ module RealReturn
       current = projection.project(horizon: @horizon, annual_contribution: @annual_contribution)
       start_value = current[:p50].first
 
-      out = [ build_row("Current", nil, current, current_expected_return(projection.assets, start_value)) ]
+      out = [ build_row("Current", nil, current, current_expected_return(projection.assets(horizon: @horizon), start_value)) ]
       return out if start_value <= 0
 
       ModelPortfolio::PRESETS.each { |name, weights| out << alternative_row(name, weights, start_value) }
@@ -39,7 +39,7 @@ module RealReturn
     # so every expected-return number shown on the page has a traceable formula.
     # No additional Monte Carlo — reuses the memoized projection.
     def referenced_asset_classes
-      held = projection.assets.map { |a| a[:asset_class] }
+      held = projection.assets(horizon: @horizon).map { |a| a[:asset_class] }
       preset = ModelPortfolio::PRESETS.values.flat_map { |w| ModelPortfolio.resolved(w, @currency, @cma).map { |x| x[:klass] } }
       custom = custom_weights_present? ? ModelPortfolio.resolved(@custom_weights, @currency, @cma).map { |x| x[:klass] } : []
       (held + preset + custom).uniq

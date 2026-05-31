@@ -19,7 +19,7 @@ class RealReturn::ProjectionTest < ActiveSupport::TestCase
     )
     projection = RealReturn::Projection.new(family, as_of: Date.new(2024, 1, 1), cma: cma)
 
-    assets = projection.assets
+    assets = projection.assets(horizon: 30)
     assert_equal 1, assets.size
     a = assets.first
     assert_equal "real_estate_cn", a[:asset_class]
@@ -65,7 +65,30 @@ class RealReturn::ProjectionTest < ActiveSupport::TestCase
     )
     projection = RealReturn::Projection.new(family, as_of: Date.new(2024, 1, 1), cma: cma)
 
-    assert_equal %w[deposit other], projection.assets.map { |a| a[:asset_class] }.sort
-    assert_in_delta 2_100_000.0, projection.assets.sum { |a| a[:value] }, 1.0
+    assert_equal %w[deposit other], projection.assets(horizon: 10).map { |a| a[:asset_class] }.sort
+    assert_in_delta 2_100_000.0, projection.assets(horizon: 10).sum { |a| a[:value] }, 1.0
+  end
+
+  def family_with_one_asset
+    family = families(:empty)
+    family.update!(currency: "CNY")
+    create_account_with_ledger(
+      account: { type: Property, currency: "CNY", balance: 0 },
+      entries: [
+        { type: "opening_anchor", date: Date.new(2010, 1, 1), balance: 1_000_000 },
+        { type: "current_anchor", date: Date.new(2024, 1, 1), balance: 2_000_000 }
+      ]
+    )
+    family
+  end
+
+  test "assets carry horizon-aware mean and regime fields" do
+    proj = RealReturn::Projection.new(family_with_one_asset, as_of: Date.new(2024, 1, 1),
+      cma: RealReturn::Cma.new(path: Rails.root.join("test", "fixtures", "files", "real_return", "cma.sample.yml")))
+    a = proj.assets(horizon: 20).first
+    assert a.key?(:mean_start)
+    assert a.key?(:mean_end)
+    assert a.key?(:regime_offsets)
+    assert a.key?(:sigma)
   end
 end

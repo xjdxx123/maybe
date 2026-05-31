@@ -7,7 +7,7 @@ class ProjectionsController < ApplicationController
 
     @cma = RealReturn::Cma.new
     projection = RealReturn::Projection.new(Current.family, as_of: Date.current, cma: @cma)
-    @assets = projection.assets
+    @assets = projection.assets(horizon: @horizon)
     @result = projection.project(horizon: @horizon, annual_contribution: @contribution)
 
     tier = RealReturn::WealthTier.new
