@@ -100,7 +100,7 @@ module RealReturn
       # Opening valuation = purchase; terminal = latest valuation, else house-index estimate.
       def manual_valued_flows
         opening = valuations.first
-        return [] if opening.nil?
+        return [] if opening.nil? || opening.date >= as_of # need a positive holding period
 
         purchase = to_base(opening.amount, opening.currency, opening.date)
         tv = terminal_value

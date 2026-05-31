@@ -14,7 +14,10 @@ module RealReturn
       amounts = flows.map { |(_, a)| a }
       return nil if amounts.min >= 0 || amounts.max <= 0
 
-      t0 = flows.map { |(d, _)| d }.min
+      dates = flows.map { |(d, _)| d }
+      return nil if dates.uniq.size < 2 # zero time span -> annualized return is undefined
+
+      t0 = dates.min
 
       rate = 0.1
       100.times do

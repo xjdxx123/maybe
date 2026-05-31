@@ -85,4 +85,17 @@ class RealReturn::AnalysisTest < ActiveSupport::TestCase
     # sp500 sample 1.0 -> 1.5 => 0.2247 counterfactual on the single 2010 contribution
     assert_in_delta 0.2247, returns["sp500"], 1e-3
   end
+
+  test "a single current-value-at-as_of valuation is not usable data (zero holding period)" do
+    # Mirrors Maybe demo data: only a current_anchor dated today, no purchase history.
+    account = create_account_with_ledger(
+      account: { type: Property, currency: "USD", balance: 0 },
+      entries: [ { type: "current_anchor", date: Date.new(2012, 1, 1), balance: 350_000 } ]
+    )
+    analysis = RealReturn::Analysis.new(account, as_of: Date.new(2012, 1, 1), base_currency: "USD", reference_data: ref)
+
+    assert_not analysis.has_data?
+    assert_empty analysis.flows
+    assert_nil analysis.nominal_return
+  end
 end

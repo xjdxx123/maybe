@@ -33,4 +33,9 @@ class RealReturn::XirrTest < ActiveSupport::TestCase
     rate = RealReturn::Xirr.compute(flows)
     assert rate < -0.99, "expected ~ -0.999, got #{rate}"
   end
+
+  test "returns nil for a zero time span (all flows on the same date)" do
+    flows = [ [ Date.new(2026, 5, 31), -350_000.0 ], [ Date.new(2026, 5, 31), 350_000.0 ] ]
+    assert_nil RealReturn::Xirr.compute(flows)
+  end
 end
