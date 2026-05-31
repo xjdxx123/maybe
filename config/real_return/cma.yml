@@ -1,0 +1,81 @@
+# Capital Market Assumptions (CMA): forward-looking EXPECTED REAL returns per asset class,
+# built from transparent, EDITABLE building-block components, plus annualized volatility (sigma).
+#
+# These are ASSUMPTIONS, not historical fact — every CMA provider (Vanguard, J.P. Morgan,
+# BlackRock) publishes their own. We anchor the OBSERVABLE inputs (dividend yields, bond/deposit
+# rates, cap rates, valuations) to real current data and document the GROWTH/REVERSION terms as
+# judgments with rationale. sigma is taken from the bundled historical annual series where available.
+# Edit any number; the engine sums the components per `kind`.
+#
+# Methodology per kind:
+#   equity:      div_yield - net_dilution + real_earnings_growth + valuation_reversion   (Grinold-Kroner)
+#   real_estate: net_rental_yield + real_rent_growth + valuation_reversion
+#   bond:        real_yield        cash: real_rate        gold/other/crypto: real_return
+metadata:
+  approach: "Chain-structured building blocks (Grinold-Kroner equities; cap-rate+growth real estate; real yield bonds; golden-constant gold). Forward assumptions anchored to observable inputs; editable."
+  as_of: "2026-05-31"
+  sources: "Equity div yields & valuations: index data + Shiller CAPE / Damodaran ERP. Rates: current CN/US deposit & 10y yields. Cap rates: market data. sigma: historical annual vol of the bundled benchmark series. Gold: Erb-Harvey golden constant."
+
+equity_cn:
+  kind: equity
+  dividend_yield: 0.028        # CSI 300 trailing dividend yield (~2.5-3%)
+  net_dilution: 0.010          # net share issuance drag (~1%/yr, A-share supply)
+  real_earnings_growth: 0.035  # assumption: China real earnings ~ slowing real GDP (~4-5%) less leakage
+  valuation_reversion: 0.000   # CSI 300 valuations near/below long-run average -> ~no drag
+  sigma: 0.24                  # CSI 300 historical annual volatility
+  source: "div yield: CSI 300 index; growth: assumption vs China real GDP; valuation: CAPE vs history; sigma: csi300 series"
+
+equity_us:
+  kind: equity
+  dividend_yield: 0.013        # S&P 500 trailing dividend yield (~1.3%)
+  net_dilution: -0.005         # net buybacks ADD ~0.5%/yr (negative dilution)
+  real_earnings_growth: 0.025  # assumption: US real earnings ~2-2.5%
+  valuation_reversion: -0.015  # elevated CAPE (~33 vs long-run ~17-20) -> negative drag over horizon
+  sigma: 0.16                  # S&P 500 historical annual volatility
+  source: "div yield: S&P 500; buybacks: S&P; valuation: Shiller CAPE high; sigma: sp500 series"
+
+real_estate_cn:
+  kind: real_estate
+  net_rental_yield: 0.016      # China net rental yield / cap rate (low, ~1.5-2%)
+  real_rent_growth: 0.000      # assumption: weak (demographics, oversupply)
+  valuation_reversion: -0.010  # elevated Price/Rent, ongoing correction (BIS CN index falling since 2021)
+  sigma: 0.09                  # BIS China RPPI historical annual volatility
+  source: "cap rate: market; growth: assumption; valuation: BIS Q.CN.N.628 correction; sigma: real_estate CN series"
+
+real_estate_us:
+  kind: real_estate
+  net_rental_yield: 0.035      # US net cap rate (~3.5-4%)
+  real_rent_growth: 0.005      # assumption
+  valuation_reversion: -0.005  # mildly elevated -> small drag
+  sigma: 0.07                  # Case-Shiller historical annual volatility
+  source: "cap rate: market; growth: assumption; sigma: real_estate US series"
+
+gold:
+  kind: gold
+  real_return: 0.000           # Erb-Harvey "golden constant": long-run real return ~0
+  sigma: 0.16                  # gold historical annual volatility
+  source: "Erb & Harvey, The Golden Dilemma (NBER); sigma: gold series"
+
+govbond:
+  kind: bond
+  real_yield: 0.010            # CN ~10y yield (~2.5%) less expected inflation (~1.5%) ~ 1% real
+  sigma: 0.06
+  source: "current CN 10y yield - expected CPI; sigma: documented long-run bond vol"
+
+deposit:
+  kind: cash
+  real_rate: -0.005            # CN 1y deposit (~1.5%) less expected inflation (~2%) ~ -0.5% real
+  sigma: 0.01
+  source: "World Bank CN deposit rate - expected CPI"
+
+crypto:
+  kind: other
+  real_return: 0.020           # highly speculative; modest neutral assumption, very wide uncertainty
+  sigma: 0.70                  # extreme volatility
+  source: "assumption — speculative; treat with caution"
+
+other:
+  kind: other
+  real_return: 0.005           # insurance / wealth-management products: modest real
+  sigma: 0.05
+  source: "assumption for mixed/managed products"
