@@ -118,6 +118,7 @@ Rails.application.routes.draw do
   resources :trades, only: %i[show new create update destroy]
 
   resource :real_return, only: :show
+  resource :projection, only: :show
   resources :valuations, only: %i[show new create update destroy] do
     post :confirm_create, on: :collection
     post :confirm_update, on: :member
