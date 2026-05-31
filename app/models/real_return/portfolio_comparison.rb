@@ -1,6 +1,9 @@
 module RealReturn
-  # Projects the current basket + alternative model portfolios (same capital, savings,
-  # horizon, correlation, seed — only the allocation differs) into comparable rows.
+  # Projects the current basket + alternative model portfolios into comparable rows.
+  # Every portfolio shares the same starting capital, annual savings, horizon, correlation
+  # and RNG seed, so only the allocation differs and runs are reproducible. Each portfolio
+  # is simulated independently (its own draws from the seeded RNG) — these are distribution
+  # bands to compare, not a single shared market scenario replayed across allocations.
   class PortfolioComparison
     def initialize(family, as_of: Date.current, horizon: 30, annual_contribution: 0.0, custom_weights: nil,
                    cma: Cma.new, reference_data: ReferenceData.default, correlation: Correlation.new,
