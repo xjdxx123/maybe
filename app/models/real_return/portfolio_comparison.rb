@@ -40,8 +40,8 @@ module RealReturn
     # No additional Monte Carlo — reuses the memoized projection.
     def referenced_asset_classes
       held = projection.assets(horizon: @horizon).map { |a| a[:asset_class] }
-      preset = ModelPortfolio::PRESETS.values.flat_map { |w| ModelPortfolio.resolved(w, @currency, @cma).map { |x| x[:klass] } }
-      custom = custom_weights_present? ? ModelPortfolio.resolved(@custom_weights, @currency, @cma).map { |x| x[:klass] } : []
+      preset = ModelPortfolio::PRESETS.values.flat_map { |w| ModelPortfolio.resolved(w, @currency, @cma, @horizon).map { |x| x[:klass] } }
+      custom = custom_weights_present? ? ModelPortfolio.resolved(@custom_weights, @currency, @cma, @horizon).map { |x| x[:klass] } : []
       (held + preset + custom).uniq
     end
 
@@ -56,10 +56,11 @@ module RealReturn
       end
 
       def alternative_row(name, weights, total)
-        assets = ModelPortfolio.assets_for(weights, total: total, currency: @currency, cma: @cma)
+        assets = ModelPortfolio.assets_for(weights, total: total, currency: @currency, cma: @cma, horizon: @horizon)
         result = MonteCarlo.new(assets: assets, correlation: @correlation, horizon: @horizon,
-                                annual_contribution: @annual_contribution, paths: @paths, seed: @seed).run
-        build_row(name, weights, result, ModelPortfolio.expected_real_return(weights, currency: @currency, cma: @cma))
+                                annual_contribution: @annual_contribution, paths: @paths, seed: @seed,
+                                regimes: @cma.regimes).run
+        build_row(name, weights, result, ModelPortfolio.expected_real_return(weights, currency: @currency, cma: @cma, horizon: @horizon))
       end
 
       def build_row(name, weights, result, expected_real_return)

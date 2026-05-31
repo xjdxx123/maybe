@@ -25,38 +25,41 @@ module RealReturn
       end
     end
 
-    # [{ value:, asset_class:, expected_real_return:, sigma: }], total split by normalized weights.
-    def assets_for(weights, total:, currency:, cma:)
-      r = resolved(weights, currency, cma)
+    # [{ value:, asset_class:, expected_real_return:, mean_start:, mean_end:, regime_offsets:, sigma: }],
+    # total split by normalized weights, over `horizon` years.
+    def assets_for(weights, total:, currency:, cma:, horizon:)
+      r = resolved(weights, currency, cma, horizon)
       sum = r.sum { |x| x[:w] }
       return [] if sum <= 0
 
       r.map do |x|
-        { value: total * (x[:w] / sum), asset_class: x[:klass], expected_real_return: x[:er], sigma: x[:sigma] }
+        { value: total * (x[:w] / sum), asset_class: x[:klass], expected_real_return: x[:er],
+          mean_start: x[:mean_start], mean_end: x[:mean_end], regime_offsets: x[:regime_offsets], sigma: x[:sigma] }
       end
     end
 
-    # Weighted average expected real return over resolved buckets, or nil.
-    def expected_real_return(weights, currency:, cma:)
-      r = resolved(weights, currency, cma)
+    # Weighted average base expected real return over resolved buckets for `horizon`, or nil.
+    def expected_real_return(weights, currency:, cma:, horizon:)
+      r = resolved(weights, currency, cma, horizon)
       sum = r.sum { |x| x[:w] }
       return nil if sum <= 0
 
       r.sum(0.0) { |x| x[:er] * (x[:w] / sum) }
     end
 
-    # Buckets with positive weight AND a valid CMA class.
-    def resolved(weights, currency, cma)
+    # Buckets with positive weight AND a valid CMA class, with horizon-aware inputs.
+    def resolved(weights, currency, cma, horizon)
       weights.filter_map do |bucket, weight|
         w = weight.to_f
         next nil if w <= 0
 
         klass = bucket_class(bucket, currency)
-        er = klass && cma.expected_real_return(klass)
-        sigma = klass && cma.sigma(klass)
-        next nil if er.nil? || sigma.nil?
+        inputs = klass && cma.projection_inputs(klass, horizon: horizon)
+        next nil if inputs.nil?
 
-        { w: w, klass: klass, er: er, sigma: sigma }
+        { w: w, klass: klass, er: cma.expected_real_return(klass, horizon: horizon),
+          mean_start: inputs[:mean_start], mean_end: inputs[:mean_end],
+          regime_offsets: inputs[:regime_offsets], sigma: inputs[:sigma] }
       end
     end
   end
