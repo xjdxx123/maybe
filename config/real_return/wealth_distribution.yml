@@ -1,0 +1,34 @@
+# Adult net-worth distribution: [percentile, threshold] in CNY (today's money), ascending.
+# A net worth at threshold T means that percent of adults hold less than T.
+# `metadata` is reserved and never read as a region. Used by RealReturn::WealthTier.
+metadata:
+  source: >
+    UBS / Credit Suisse Global Wealth Report (adult net worth). Anchors: global median
+    $8,654 and China median $27,273 / mean $75,731 (GWR, via Wikipedia 'wealth per adult');
+    global top-10% ~$138k and top-1% ~$1.08M (GWR). Intermediate percentiles and China's
+    upper percentiles are interpolated from median/mean + the GWR wealth pyramid.
+    Converted at ~7.1 CNY/USD.
+  as_of: "2022-2023 (GWR)"
+  note: "APPROXIMATE — survey-based and partly interpolated; directional, not precise."
+
+# China national adult net worth (CNY)
+CN:
+  - [10, 14000]
+  - [25, 64000]
+  - [50, 194000]
+  - [75, 533000]
+  - [90, 1280000]
+  - [95, 2485000]
+  - [99, 9230000]
+  - [99.9, 40000000]
+
+# Global adult net worth (CNY)
+WLD:
+  - [10, 3000]
+  - [25, 14000]
+  - [50, 61000]
+  - [75, 284000]
+  - [90, 980000]
+  - [95, 2000000]
+  - [99, 7670000]
+  - [99.9, 30000000]
