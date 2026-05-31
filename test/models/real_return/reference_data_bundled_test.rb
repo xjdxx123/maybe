@@ -5,7 +5,8 @@ class RealReturn::ReferenceData::BundledTest < ActiveSupport::TestCase
     dir = Rails.root.join("test", "fixtures", "files", "real_return")
     @data = RealReturn::ReferenceData::Bundled.new(
       cpi_path: dir.join("cpi.sample.yml"),
-      benchmarks_path: dir.join("benchmarks.sample.yml")
+      benchmarks_path: dir.join("benchmarks.sample.yml"),
+      m2_path: dir.join("m2.sample.yml")
     )
   end
 
@@ -32,5 +33,11 @@ class RealReturn::ReferenceData::BundledTest < ActiveSupport::TestCase
   test "ranges report the covered years" do
     assert_equal (Date.new(2010, 1, 1)..Date.new(2012, 1, 1)), @data.cpi_range(area: "CN")
     assert_nil @data.cpi_range(area: "ZZ")
+  end
+
+  test "m2_index reads the M2 series and interpolates" do
+    assert_in_delta 110.0, @data.m2_index(area: "CN", on: Date.new(2011, 1, 1)), 1e-9
+    assert_equal (Date.new(2010, 1, 1)..Date.new(2012, 1, 1)), @data.m2_range(area: "CN")
+    assert_nil @data.m2_index(area: "ZZ", on: Date.new(2011, 1, 1))
   end
 end

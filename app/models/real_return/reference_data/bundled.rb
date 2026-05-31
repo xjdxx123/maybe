@@ -6,10 +6,12 @@ module RealReturn
     class Bundled
       DEFAULT_CPI_PATH = Rails.root.join("config", "real_return", "cpi.yml")
       DEFAULT_BENCHMARKS_PATH = Rails.root.join("config", "real_return", "benchmarks.yml")
+      DEFAULT_M2_PATH = Rails.root.join("config", "real_return", "m2.yml")
 
-      def initialize(cpi_path: DEFAULT_CPI_PATH, benchmarks_path: DEFAULT_BENCHMARKS_PATH)
+      def initialize(cpi_path: DEFAULT_CPI_PATH, benchmarks_path: DEFAULT_BENCHMARKS_PATH, m2_path: DEFAULT_M2_PATH)
         @cpi_path = cpi_path
         @benchmarks_path = benchmarks_path
+        @m2_path = m2_path
       end
 
       def cpi_index(area:, on:)
@@ -28,6 +30,14 @@ module RealReturn
         series_range(benchmark_series(key, region))
       end
 
+      def m2_index(area:, on:)
+        interpolate(m2_series(area), on)
+      end
+
+      def m2_range(area:)
+        series_range(m2_series(area))
+      end
+
       private
         def cpi_data
           @cpi_data ||= load_yaml(@cpi_path)
@@ -43,6 +53,15 @@ module RealReturn
 
         def cpi_series(area)
           raw = cpi_data[area.to_s]
+          raw && normalize_years(raw)
+        end
+
+        def m2_data
+          @m2_data ||= load_yaml(@m2_path)
+        end
+
+        def m2_series(area)
+          raw = m2_data[area.to_s]
           raw && normalize_years(raw)
         end
 
