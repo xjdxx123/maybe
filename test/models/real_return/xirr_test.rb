@@ -25,4 +25,12 @@ class RealReturn::XirrTest < ActiveSupport::TestCase
     flows = [ [ Date.new(2021, 1, 1), -1000.0 ], [ Date.new(2022, 1, 1), -500.0 ] ]
     assert_nil RealReturn::Xirr.compute(flows)
   end
+
+  test "near-total-loss exercises the bisection fallback" do
+    # Newton overshoots below -1 and breaks; bisection on [-0.9999, 10] finds the root.
+    # -1000 -> +1 over one year solves (1+r) = 1/1000 => r ~= -0.999
+    flows = [ [ Date.new(2010, 1, 1), -1000.0 ], [ Date.new(2011, 1, 1), 1.0 ] ]
+    rate = RealReturn::Xirr.compute(flows)
+    assert rate < -0.99, "expected ~ -0.999, got #{rate}"
+  end
 end

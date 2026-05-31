@@ -51,6 +51,8 @@ module RealReturn
           return nil if raw.nil?
 
           # Region-keyed series (e.g. real_estate) nest one more level: { region => { year => level } }.
+          # The data shape is authoritative: a flat series ignores `region`; a nested series
+          # requires `region` (returns nil without one). Assumes a series is all-nested or all-flat.
           if raw.values.first.is_a?(Hash)
             return nil if region.nil?
 
@@ -83,6 +85,8 @@ module RealReturn
           return nil if on < Date.new(min_year, 1, 1)
           return series[max_year] if on >= Date.new(max_year, 1, 1)
 
+          # Assumes consecutive years are present (dense annual data); a missing interior
+          # year makes the bracketing pair incomplete and yields nil rather than a guess.
           y = on.year
           lo = series[y]
           hi = series[y + 1]

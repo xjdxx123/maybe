@@ -37,4 +37,14 @@ class RealReturn::BenchmarkTest < ActiveSupport::TestCase
     ranked = RealReturn::Benchmark.rank([ [ "a", 0.1 ], [ "b", nil ], [ "c", 0.3 ] ])
     assert_equal [ "c", "a", "b" ], ranked.map(&:first)
   end
+
+  test "annualized is the per-year growth rate over the period" do
+    # sp500 1.0 -> 1.5 over 730 days => 1.5**(365/730) - 1 ~= 0.2247
+    rate = @bench.annualized(key: "sp500", from: Date.new(2010, 1, 1), to: Date.new(2012, 1, 1))
+    assert_in_delta 0.2247, rate, 1e-3
+  end
+
+  test "annualized returns nil when the series is missing" do
+    assert_nil @bench.annualized(key: "missing", from: Date.new(2010, 1, 1), to: Date.new(2012, 1, 1))
+  end
 end
