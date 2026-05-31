@@ -132,11 +132,19 @@
 
     <div class="space-y-2 mb-4">
       <% @methodology_classes.each do |klass| %>
-        <% er = @cma.expected_real_return(klass) %>
+        <% er = @cma.expected_real_return(klass, horizon: @horizon) %>
+        <% pi = @cma.projection_inputs(klass, horizon: @horizon) %>
         <details class="border border-secondary rounded-lg">
           <summary class="flex justify-between items-center gap-2 px-3 py-2 cursor-pointer text-sm">
             <span class="text-primary font-medium"><%= klass %></span>
-            <span class="text-secondary"><%= rr_pct_yr(er) %> · σ <%= number_to_percentage((@cma.sigma(klass) || 0) * 100, precision: 0) %></span>
+            <span class="text-secondary">
+              <% if pi && (pi[:mean_start] - pi[:mean_end]).abs > 1e-6 %>
+                <%= rr_pct_yr(pi[:mean_start]) %> → <%= rr_pct_yr(pi[:mean_end]) %> over <%= @horizon %>y
+              <% else %>
+                <%= rr_pct_yr(er) %>
+              <% end %>
+              · σ <%= number_to_percentage((@cma.sigma(klass) || 0) * 100, precision: 0) %>
+            </span>
           </summary>
           <div class="px-3 pb-3 overflow-x-auto">
             <table class="w-full text-sm">
@@ -149,9 +157,11 @@
                 </tr>
               </thead>
               <tbody>
-                <% @cma.breakdown(klass).each do |c| %>
+                <% @cma.breakdown(klass, horizon: @horizon).each do |c| %>
                   <tr class="border-b border-secondary">
-                    <td class="py-1 pr-4 text-primary align-top"><%= c[:label] %></td>
+                    <td class="py-1 pr-4 text-primary align-top">
+                      <%= c[:label] %><% if c[:note] %> <span class="text-subdued">(<%= c[:note] %>)</span><% end %>
+                    </td>
                     <td class="py-1 pr-4 text-secondary align-top whitespace-nowrap"><%= projection_signed_pct(c[:contribution]) %></td>
                     <td class="py-1 pr-4 align-top whitespace-nowrap">
                       <% if c[:type] == :observable %>
@@ -164,9 +174,18 @@
                   </tr>
                 <% end %>
                 <tr>
-                  <td class="py-1 pr-4 text-primary font-medium">= Expected real return</td>
+                  <td class="py-1 pr-4 text-primary font-medium">= Expected real return (base)</td>
                   <td class="py-1 pr-4 text-primary font-medium whitespace-nowrap" colspan="3"><%= rr_pct_yr(er) %></td>
                 </tr>
+                <% if pi && pi[:regime_offsets].any? %>
+                  <tr>
+                    <td class="py-1 pr-4 text-subdued align-top">Regime offsets</td>
+                    <td class="py-1 text-subdued align-top" colspan="3">
+                      <%= pi[:regime_offsets].map { |name, off| "#{name} #{projection_signed_pct(off)}" }.join(" · ") %>
+                      (mix: <%= @cma.regimes.map { |n, p| "#{n} #{number_to_percentage(p * 100, precision: 0)}" }.join(" / ") %>)
+                    </td>
+                  </tr>
+                <% end %>
               </tbody>
             </table>
           </div>
@@ -175,7 +194,7 @@
     </div>
 
     <div class="text-sm text-secondary space-y-1">
-      <p><span class="text-primary font-medium">Monte Carlo:</span> each asset's annual real return ~ correlated lognormal (mean = expected real return, vol = σ); 5,000 paths; bands are the 15th / 50th / 85th percentiles. Parameters: correlation ρ = 0.25, horizon <%= @horizon %>y, annual savings <%= rr_money(@contribution, currency) %>, fixed RNG seed (reproducible).</p>
+      <p><span class="text-primary font-medium">Monte Carlo:</span> each asset's annual real return ~ correlated lognormal (mean = expected real return, vol = σ); 5,000 paths; bands are the 15th / 50th / 85th percentiles. Parameters: correlation ρ = 0.25, horizon <%= @horizon %>y, annual savings <%= rr_money(@contribution, currency) %>, fixed RNG seed (reproducible). Bands also reflect a gliding growth assumption and a per-path macro regime (base/bear/bull) — not only year-to-year volatility.</p>
       <p><span class="text-primary font-medium">Real terms:</span> real = (1 + nominal) ÷ (1 + inflation) − 1 (Fisher). All values are today's purchasing power.</p>
     </div>
   </div>
