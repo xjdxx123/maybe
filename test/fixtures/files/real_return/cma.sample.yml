@@ -5,6 +5,8 @@ equity_cn:
   real_earnings_growth: 0.030
   valuation_reversion: -0.005
   sigma: 0.20
+  sources:
+    dividend_yield: "sample dividend source"
 real_estate_cn:
   kind: real_estate
   net_rental_yield: 0.018

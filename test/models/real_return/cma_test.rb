@@ -35,4 +35,35 @@ class RealReturn::CmaTest < ActiveSupport::TestCase
     assert_in_delta 0.025, c["dividend_yield"], 1e-9
     assert_nil cma.components("nope")
   end
+
+  test "breakdown decomposes equity into signed contributions that sum to the expected real return" do
+    bd = cma.breakdown("equity_cn")
+    assert_equal %w[dividend_yield net_dilution real_earnings_growth valuation_reversion], bd.map { |c| c[:key] }
+
+    dilution = bd.find { |c| c[:key] == "net_dilution" }
+    # stored +0.005 but SUBTRACTED in the formula -> contribution is negative
+    assert_in_delta(-0.005, dilution[:contribution], 1e-9)
+    assert_equal "Net dilution / buybacks", dilution[:label]
+
+    assert_equal :observable, bd.find { |c| c[:key] == "dividend_yield" }[:type]
+    assert_equal :assumption, bd.find { |c| c[:key] == "real_earnings_growth" }[:type]
+
+    # rows must sum to the headline number
+    assert_in_delta cma.expected_real_return("equity_cn"), bd.sum { |c| c[:contribution] }, 1e-9
+  end
+
+  test "breakdown surfaces per-input source text, nil when absent" do
+    bd = cma.breakdown("equity_cn")
+    assert_equal "sample dividend source", bd.find { |c| c[:key] == "dividend_yield" }[:source]
+    assert_nil bd.find { |c| c[:key] == "net_dilution" }[:source]
+  end
+
+  test "breakdown is empty for an unknown class" do
+    assert_equal [], cma.breakdown("nope")
+  end
+
+  test "metadata returns the YAML metadata hash, or empty when absent" do
+    # sample fixture has no metadata block
+    assert_equal({}, cma.metadata)
+  end
 end
