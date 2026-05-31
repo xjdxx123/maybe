@@ -46,6 +46,15 @@ We use the **building-block / decomposition** method (academic + practitioner st
 ### Scenarios = percentiles of the Monte Carlo outcome
 Pessimistic / Neutral / Optimistic are **not** hand-set; they are **percentiles of the simulated horizon-T outcome**. **Defaults: neutral = 50th, pessimistic = 15th, optimistic = 85th** (a "likely range," not tail extremes; configurable). The band **narrows over 20–30 yr** (time diversification), as practitioners present it.
 
+### Inflation lenses (deflators) — measuring "real" against CPI, M2, and house prices
+
+"Real return" depends on **which inflation you deflate by**. We support three deflators, shown side by side (they diverge sharply):
+- **Consumer (CPI)** — the standard cost-of-living basket. Real data (`cpi.yml`).
+- **Monetary (M2)** — broad-money growth; "is your share of total money shrinking?" Real data (`m2.yml`, World Bank `FM.LBL.BMNY.CN`).
+- **Asset (house price)** — the regional home-price index; "can your money keep up with property?" Real data (`benchmarks.yml` `real_estate`).
+
+For any nominal return, `real = (1 + nominal) / (1 + deflator_rate) − 1` (Fisher), where `deflator_rate` is that lens's annualized growth over the holding period. Worked example (the demo CNY portfolio, nominal 5.4%/yr since 2010): **vs CPI +3.7%/yr · vs house-price +3.8%/yr · vs M2 −3.4%/yr** — beating consumer prices and housing, but losing to money-supply growth. Applies to BOTH the historical Returns page and the projection's real-terms output.
+
 **Out of scope for this spec (future upgrade):** a fully *structural* macro model (population → productivity → GDP → wages → profits → EPS → PE modeled layer-by-layer). We adopt the building-block synthesis instead; a literal structural chain multiplies assumptions and compounding error without clearly improving a personal long-horizon forecast. The 4-layer organization above gives the chain's transparency without that machinery.
 
 ## 4. Architecture & components
@@ -58,10 +67,12 @@ Pure Ruby under `app/models/real_return/` (consistent with prior phases; fat mod
 - **`RealReturn::MonteCarlo`** — inputs: per-asset `{value, expected_real_return, sigma, asset_class}`, correlation matrix, horizon (years), annual contribution (+ optional growth), seed. Simulates `N` correlated lognormal real-return paths; injects annual contributions; returns the **per-year distribution** of basket real value → percentile bands. RNG **seedable** (deterministic tests + stable display).
 - **`RealReturn::Projection`** (per `Family`) — assembles the current basket (account values in base currency), maps to asset classes via `AssetClass`, runs `MonteCarlo`, and returns scenario trajectories (real, + nominal reference via an assumed inflation path) and terminal percentiles at each requested horizon.
 - **`RealReturn::WealthTier`** — maps a (real) net worth to a **China national** and **global** wealth percentile via `config/real_return/wealth_distribution.yml` (log-linear interpolation; reuses the percentile-interpolation logic pattern from the original RealReturn W-series). Applied to current net worth and the projected neutral (and optionally pess/opt) real net worth, **vs today's distribution** (apples-to-apples in today's money). Returns percentile + a tier label.
+- **`RealReturn::Deflator`** — given a lens (`:cpi` / `:m2` / `:house_price`), area, and date range, returns the **annualized inflation** for that lens (each is a level series → `(lvl[t1]/lvl[t0])**(365/days) − 1`), and `real_return(nominal:, lens:, ...)` via Fisher. Unifies CPI (`cpi.yml`), M2 (`m2.yml`), and house price (`benchmarks.yml` `real_estate`). Used by `Analysis` / `PortfolioReport` / `Projection` to report real return under all three lenses. **Also retrofits the shipped Returns page** to show real return vs CPI / M2 / house price (small change).
 
 ## 5. Data (researched + bundled + editable; sourced & caveated)
 
 - **`config/real_return/cma.yml`** — per asset class: the 4-layer building-block inputs + resulting expected real return (neutral) + volatility σ. Each entry carries `source` notes. Inputs are a documented snapshot (current dividend yields, CAPE/Price-Rent, bond/deposit yields, growth assumptions), refreshable. *Researched at implementation time from public sources, like the benchmark data.*
+- **`config/real_return/m2.yml`** — broad-money (M2) levels per area in local currency (CN: CNY, US: USD), for the monetary deflator. **Already fetched (REAL)**: World Bank `FM.LBL.BMNY.CN`, 2000-2024.
 - **Correlation matrix** — estimated from `benchmarks.yml` annual series, or a small bundled matrix with documented values.
 - **`config/real_return/wealth_distribution.yml`** — CN + WLD percentile → real-net-worth thresholds in **CNY (today's money)**. Researched from CHFS (China Household Finance Survey), Credit Suisse/UBS Global Wealth Report, WID.world. More granular than the original placeholder (e.g., 10/25/50/75/90/95/99th). Explicitly labeled **approximate** with `source`/`as_of`; wealth data is the weakest link (as flagged for real-estate).
 
@@ -108,6 +119,7 @@ Add a **"Projection"** item to `app/views/layouts/application.html.erb` `mobile_
 
 ## 10. Phasing (each its own plan → spec → subagent implementation)
 
+- **P-0 — Deflators (CPI / M2 / house price)**: `RealReturn::Deflator` + `m2.yml` (already fetched) + retrofit the shipped **Returns** page to show real return under all three lenses. Small, high-value, independent of the projection engine — can ship first.
 - **P-A — CMA core**: `RealReturn::Cma` (4-layer building-block math) + `AssetClass` mapping + researched/bundled `cma.yml` (with sources). Unit-tested against synthetic inputs.
 - **P-B — Monte Carlo + Projection**: `Correlation`, `MonteCarlo` (seeded, correlated, contributions), `Projection` (basket assembly, real/nominal, scenarios). Unit-tested with fixed seed.
 - **P-C — Wealth tier + data**: `WealthTier` + researched/bundled `wealth_distribution.yml` (CN + global). Unit-tested.
