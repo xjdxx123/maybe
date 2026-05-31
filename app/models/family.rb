@@ -117,4 +117,8 @@ class Family < ApplicationRecord
   def self_hoster?
     Rails.application.config.app_mode.self_hosted?
   end
+
+  def real_return_report(as_of: Date.current)
+    RealReturn::PortfolioReport.new(self, as_of: as_of)
+  end
 end

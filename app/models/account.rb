@@ -160,4 +160,8 @@ class Account < ApplicationRecord
       raise "Unknown account type: #{accountable_type}"
     end
   end
+
+  def real_return(as_of: Date.current)
+    RealReturn::Analysis.new(self, as_of: as_of)
+  end
 end
