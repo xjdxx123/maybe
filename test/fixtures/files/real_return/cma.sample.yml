@@ -1,0 +1,29 @@
+equity_cn:
+  kind: equity
+  dividend_yield: 0.025
+  net_dilution: 0.005
+  real_earnings_growth: 0.030
+  valuation_reversion: -0.005
+  sigma: 0.20
+real_estate_cn:
+  kind: real_estate
+  net_rental_yield: 0.018
+  real_rent_growth: 0.005
+  valuation_reversion: -0.013
+  sigma: 0.10
+govbond:
+  kind: bond
+  real_yield: 0.004
+  sigma: 0.06
+deposit:
+  kind: cash
+  real_rate: -0.003
+  sigma: 0.01
+gold:
+  kind: gold
+  real_return: 0.000
+  sigma: 0.15
+other:
+  kind: other
+  real_return: 0.010
+  sigma: 0.05
