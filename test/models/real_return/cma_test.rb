@@ -26,6 +26,7 @@ class RealReturn::CmaTest < ActiveSupport::TestCase
     assert_in_delta 0.20, cma.sigma("equity_cn"), 1e-9
     assert_includes cma.asset_classes, "gold"
     assert_nil cma.expected_real_return("nope")
+    assert_nil cma.expected_real_return("nope", horizon: 30)
     assert_nil cma.sigma("nope")
   end
 

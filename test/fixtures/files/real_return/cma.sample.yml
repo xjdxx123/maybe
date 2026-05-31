@@ -45,6 +45,6 @@ equity_glide:
     target: 20
   glide:
     real_earnings_growth: 0.020
-  regimes:
+  regime_offsets:
     bear: -0.03
     bull: 0.02
