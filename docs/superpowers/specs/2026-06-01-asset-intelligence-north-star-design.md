@@ -76,9 +76,12 @@ Plus **accessibility**: private wealth management is gated by high investable-as
 - **Hard out-of-scope (v1, and a safety line):** **live trading / order execution / moving money.** The system analyzes and backtests; it **never places an order.** This is both a safety stance and a major simplification (no broker integration, no real-time execution risk).
 - **Tech reality:** this pillar is **Python** (the entire serious backtesting ecosystem is). It lives in an **owned Python service** (§5).
 
-### Pillar C — LLM agent: natural language → execute *(not built; thin orchestration over A & B)*
-- **In scope:** structured extraction from natural-language financial descriptions; mapping to the account/holding model; a **guarded write path** (propose → human confirm → deterministic write); narrating/explaining results; calling A's and B's capabilities as **typed tools**.
+### Pillar C — LLM agent: the general orchestration brain *(not built; the product's primary interface)*
+The agent is **not** a narrow asset-entry helper — it is the **general, owned orchestration brain** through which a user drives *everything* in natural language (record assets, analyze, run quant/backtests, ask questions, manage the portfolio, and more). It is built **once** as an owned **Python** service (tool-calling + planning + streaming); **every capability is a tool**, so it grows by *adding tools*, not by rebuilding. (Why Python, why owned/external: §5 — it is a "Python microservice" that survives any future shell rewrite untouched.)
+- **In scope (framework + first tools):** structured extraction from natural-language financial descriptions; calling A's and B's capabilities as **typed tools**; a **guarded write path** (propose → human confirm → deterministic write); narrating/explaining results. SP-1 wires the first tools (asset entry + real-return analysis); quant tools (backtest / factor / evaluate) are added once Pillar B (Qlib) lands.
+- **MVP LLM:** **DeepSeek** (`deepseek-chat`) via its OpenAI-compatible API, **behind a swappable model-provider interface** in the agent service (model is changeable later). Strong Chinese-language fit for the CN/RMB user; cheap. *Data-residency note: DeepSeek's API is China-hosted — fine for self-use MVP; revisit before any cross-border commercial use.*
 - **Hard rule:** the LLM **parses, routes, and explains** — it **never** computes a figure or persists data directly. All math and all writes are deterministic code; the LLM may only *invoke* them, and may **never emit a number it did not receive from the deterministic engine.**
+- **Flagged future milestone (its own careful design):** "describe a strategy / alpha factor in natural language → auto-backtest → evaluate" is powerful but a **data-snooping / overfitting hazard** if the agent generates strategies until one backtests well. Requires §6.6 / §6.1 guardrails (mandatory out-of-sample, calibration, multiple-testing penalties) — a dedicated sub-project, not a hand-wave.
 - **Non-goals (v1):** autonomous decisions, unsupervised writes, any money-moving action, and trusting any LLM market **forecast** as signal.
 
 ---
@@ -220,19 +223,19 @@ This maps onto the existing engine (`RealReturn::CMA`, `correlation`, `monte_car
 
 ## 7. Decomposition & roadmap
 
-Each sub-project is independently shippable and gets its own spec → plan. Recommended order:
+Each sub-project is independently shippable and gets its own spec → plan. **Build order set to *quant-service-first* (2026-06-01):** the Qlib service is the **easiest owned service to stand up** (pure compute — no UI, streaming, or writes) and **de-risks the biggest genuinely-new unknown** (the Python quant stack) in isolation; the agent is then built on proven service scaffolding with richer tools. The two are decoupled (no hard dependency), so this is a cheap, reversible reordering.
 
-1. **SP-1 — Conversational asset entry + instant real-return analysis** *(flagship; first)*
-   The flagship scenario end-to-end on existing assets (Maybe models + `real_return`). Establishes the **owned-agent-service + clean-API-boundary** pattern and the **guarded write path** on a small surface. ~3 tools (`parse_assets`, `upsert_account/holding`, `compute_real_return`).
-   **Done when:** a user can describe a mixed portfolio in natural language and get it **recorded (after confirmation)** and **analyzed** (real return + inflation verdict + benchmark league), with **every number sourced from the deterministic engine** and projections shown with uncertainty.
+1. **Quant/data service (Qlib)** — *(now first; foundation of Pillar B)*
+   An owned Python service: FastAPI + queue worker; canonical Parquet store + data-provider interface (FRED + OpenBB sidecar to start); first backtest capability via **Qlib (MIT)** behind an owned `BacktestEngine` interface. **First cut is a thin end-to-end vertical slice** (data → one strategy → equity curve + stats with costs/slippage), *not* the whole Qlib surface.
+   **Done when:** Maybe can request a backtest of a defined strategy over a date range and receive results (equity curve, stats) with **costs/slippage and bias controls applied.** *(Needs its own spec.)*
 
-2. **SP-2 — Owned Python quant/data service (foundation of Pillar B)**
-   FastAPI + queue worker; canonical Parquet store + data-provider interface (FRED + OpenBB sidecar to start); first backtest capability via **Qlib (MIT)** behind an owned `BacktestEngine` interface. Decoupled — can begin any time, even in parallel with SP-1.
-   **Done when:** Maybe can request a backtest of a defined strategy over a date range and receive results (equity curve, stats) with **costs/slippage and bias controls applied.**
+2. **Conversational asset entry + instant real-return analysis (the agent)** — *(the flagship; now built second)*
+   The flagship scenario end-to-end on existing assets (Maybe models + `real_return`). Establishes the **owned external Python agent service** (DeepSeek), the **Maybe↔agent boundary**, and the **guarded write path**. Its own internal sequencing stays easy→hard: asset-entry tools first, then quant tools. **Spec:** `2026-06-01-sp1-conversational-asset-entry-design.md`.
+   **Done when:** a user can describe a mixed portfolio in natural language and get it **recorded (after confirmation)** and **analyzed**, with **every number sourced from the deterministic engine** and projections shown with uncertainty.
 
-3. **SP-3 — Market-analysis & backtest surfaces in Maybe** (indicators, screening, backtest UI) over SP-2.
+3. **Market-analysis & backtest surfaces in Maybe** (indicators, screening, backtest UI) over the quant service.
 
-4. **SP-4 — Agent grows to wrap Pillar B** (market/quant tools added to the agent as capabilities land — cheaply, since each tool is a thin wrapper).
+4. **Agent grows to wrap the quant service** (market/quant tools added to the agent — cheaply, since each tool is a thin wrapper). This is where **"NL → backtest → evaluate"** lands, with the §6.6 / §6.1 overfitting guardrails.
 
 5. **Ongoing — deepen Pillar A** (liabilities/mortgage, cash-vs-inflation, wealth percentile) — slot in opportunistically.
 
@@ -240,13 +243,13 @@ Each sub-project is independently shippable and gets its own spec → plan. Reco
 
 ---
 
-## 8. SP-1 preliminary scope (next: its own spec)
+## 8. SP-1 scope (now has its own spec)
 
-- **Trigger:** a chat surface in Maybe (reuse `CreateChatResponseJob` infra) where the user describes assets in natural language.
-- **Flow:** `parse_assets` (LLM structured extraction → typed list of `{asset_type, amount, currency, acquisition_date?, identifier?}`) → **disambiguation/confirmation UI** (user fixes tickers / cost basis / dates) → `upsert` into Maybe's `Account` / `Valuation` / `Holding` (deterministic, idempotent) → `compute_real_return` (existing engine) → **narrated, uncertainty-aware** summary.
-- **Architecture:** the agent runs as an **owned service** (language decided in SP-1's spec — Python to share the LLM/quant stack, or Node) calling Maybe's API; Maybe exposes a **scoped, authenticated internal API** for the writes/reads it needs. This is the **first instance of the §5 boundary.**
-- **Safety:** no write without explicit user confirmation; LLM never emits computed figures; ambiguous inputs always surface for confirmation.
-- **Open for SP-1's spec:** agent-service language; exact internal API surface; chat UX (new surface vs. extend existing); how confirmation is rendered (Hotwire).
+**Full spec:** `docs/superpowers/specs/2026-06-01-sp1-conversational-asset-entry-design.md`.
+
+- **Decided:** owned **external Python** agent service (the first instance of the §5 boundary); **DeepSeek** MVP LLM behind a swappable provider interface; division of labor = **Maybe owns the chat UI + deterministic writes + real_return math; the agent is the read-only brain** (parse / propose / narrate). Writes happen in Maybe **after explicit user confirmation** → the agent needs no write access (§6.3).
+- **Flow:** Maybe chat UI → (SSE) agent service parses → returns a structured *proposed-assets* payload + narration → Maybe renders a **Hotwire confirmation UI** (user fixes tickers / cost basis / dates) → on confirm, Maybe writes deterministically (`Account.create_and_sync` + `opening_anchor`@purchase + `current_anchor`) and computes `RealReturn::Analysis` in-process → displays.
+- **Establishes** the general agent framework (`/query` + SSE, tool-calling, the Maybe↔agent bridge, the guarded write loop) that all later capabilities reuse.
 
 ---
 
