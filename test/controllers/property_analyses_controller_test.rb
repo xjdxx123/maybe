@@ -1,6 +1,6 @@
 require "test_helper"
 
-class PropertyAnalysisControllerTest < ActionDispatch::IntegrationTest
+class PropertyAnalysesControllerTest < ActionDispatch::IntegrationTest
   setup { sign_in users(:family_admin) }
 
   test "show renders with defaults" do
