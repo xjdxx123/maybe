@@ -30,4 +30,33 @@ class RealReturn::PropertyAnalysisTest < ActiveSupport::TestCase
     assert_nil cf[:dscr]
     assert_in_delta cf[:cap_rate], cf[:cash_on_cash], 1e-9
   end
+
+  test "distribution percentiles are ordered and reproducible" do
+    d = build(paths: 1500).distribution
+    t = d[:terminal]
+    assert_operator t[:p10], :<=, t[:p50]
+    assert_operator t[:p50], :<=, t[:p90]
+    assert_equal d[:years].size, d[:p50].size
+    assert_in_delta d[:p50].last, build(paths: 1500).distribution[:p50].last, 1e-6
+  end
+
+  test "higher leverage widens the band and raises the ruin probability" do
+    low = build(ltv: 0.2, paths: 2000).distribution
+    high = build(ltv: 0.8, paths: 2000).distribution
+    # Leverage amplifies return dispersion: annualized p90-p10 spread widens with LTV
+    ann_spread = ->(d) { d[:annualized][:p90] - d[:annualized][:p10] }
+    assert_operator ann_spread.call(high), :>, ann_spread.call(low)
+    assert_operator high[:negative_equity_share], :>=, low[:negative_equity_share]
+  end
+
+  test "a valuation de-rating lowers the median terminal equity" do
+    flat = build(price_to_rent_current: 1.0, price_to_rent_target: 1.0, ltv: 0.0, paths: 2000).distribution
+    derate = build(price_to_rent_current: 1.3, price_to_rent_target: 1.0, ltv: 0.0, paths: 2000).distribution
+    assert_operator derate[:terminal][:p50], :<, flat[:terminal][:p50]
+  end
+
+  test "distribution exposes a multi-horizon table for years <= holding period" do
+    d = build(holding_years: 10).distribution
+    assert_equal [ 5, 10 ], d[:table].map { |row| row[:years] }
+  end
 end
