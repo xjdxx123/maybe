@@ -119,6 +119,7 @@ Rails.application.routes.draw do
 
   resource :real_return, only: :show
   resource :projection, only: :show
+  resource :property_analysis, only: :show
   resources :valuations, only: %i[show new create update destroy] do
     post :confirm_create, on: :collection
     post :confirm_update, on: :member
