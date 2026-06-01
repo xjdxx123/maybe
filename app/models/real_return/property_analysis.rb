@@ -74,14 +74,18 @@ module RealReturn
           mean_a = -0.99 if mean_a < -0.99
           drift = Math.log(1.0 + mean_a) - 0.5 * @sigma**2
           value *= Math.exp(drift + @sigma * gaussian(rng))
+          # v1 simplification: NOI is deterministic (rent glide only — no regime/σ); price carries the risk.
           noi *= (1.0 + g)
           deflator = (1.0 + @inflation)**t
+          # cum_cash: undiscounted sum of real net cash flows (no time-value weighting) — v1.
           cum_cash += noi - ds_nominal / deflator
-          by_year[t] << value - nominal_balance(loan, t) / deflator + cum_cash
+          by_year[t] << value - nominal_balance(loan, t, ds_nominal) / deflator + cum_cash
         end
       end
 
       terminal = by_year[n]
+      # Annualized equity CAGR = (terminal equity / down payment)^(1/n) − 1. NOT an IRR — intermediate
+      # cash flows are collapsed into terminal equity. nil when the equity percentile is ≤ 0 (underwater).
       ann = ->(equity) { (down <= 0 || equity <= 0) ? nil : (equity / down)**(1.0 / n) - 1.0 }
       {
         years: (0..n).to_a,
@@ -120,11 +124,11 @@ module RealReturn
         a + (b - a) * frac
       end
 
-      # Remaining nominal loan balance after t annual payments (clamped >= 0).
-      def nominal_balance(loan, t)
+      # Remaining nominal loan balance after t annual payments (clamped >= 0). `pay` is the
+      # precomputed annual debt service (passed from the loop to avoid recomputing it each year).
+      def nominal_balance(loan, t, pay)
         return 0.0 if loan <= 0 || @amortization_years <= 0
 
-        pay = debt_service(loan)
         bal =
           if @mortgage_rate <= 0
             loan - pay * t
@@ -135,6 +139,8 @@ module RealReturn
         [ bal, 0.0 ].max
       end
 
+      # NOTE: gaussian / pick_regime / percentile are intentionally duplicated from MonteCarlo to keep
+      # this PORO self-contained. If a third simulator appears, extract a shared RealReturn sampling module.
       def gaussian(rng)
         u1 = rng.rand
         u1 = 1e-12 if u1 <= 0.0
