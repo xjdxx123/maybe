@@ -65,6 +65,9 @@ coverage
 .cursor/rules/structure.mdc
 .cursor/rules/agent.mdc
 
+# Ignore local Claude Code config
+.claude/
+
 # Ignore node related files
 node_modules
 
