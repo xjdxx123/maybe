@@ -1,0 +1,111 @@
+<% content_for :page_header do %>
+  <div class="space-y-1 mb-6">
+    <h1 class="text-xl lg:text-3xl font-medium text-primary">Property analysis</h1>
+    <p class="text-sm lg:text-base text-secondary">A levered, real-terms, regime-aware distribution for a single property — not a point forecast.</p>
+  </div>
+<% end %>
+
+<% currency = @currency %>
+
+<%# 1. Inputs %>
+<div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+  <%= form_with url: property_analysis_path, method: :get, class: "flex flex-wrap items-end gap-4" do |f| %>
+    <% [ [ :price, "Price (#{currency})", @price.round, 1 ], [ :monthly_rent, "Monthly rent", @monthly_rent.round, 1 ] ].each do |field, label, value, step| %>
+      <div>
+        <%= label_tag field, label, class: "block text-xs text-secondary mb-1" %>
+        <%= number_field_tag field, value, step: step, autocomplete: "off", class: "rounded-lg border border-secondary bg-container text-primary text-sm px-3 py-2 w-40" %>
+      </div>
+    <% end %>
+    <div>
+      <%= label_tag :region, "Region", class: "block text-xs text-secondary mb-1" %>
+      <%= select_tag :region, options_for_select([ [ "China", "cn" ], [ "US", "us" ] ], @region), class: "rounded-lg border border-secondary bg-container text-primary text-sm px-3 py-2" %>
+    </div>
+    <% [ [ :holding_years, "Hold (yrs)", @holding_years ], [ :ltv, "LTV %", (@inputs[:ltv] * 100).round ], [ :mortgage_rate, "Rate %", (@inputs[:mortgage_rate] * 100).round(1) ], [ :amortization_years, "Amort (yrs)", @inputs[:amortization_years] ], [ :opex_pct, "Opex %", (@inputs[:opex_pct] * 100).round ], [ :vacancy_pct, "Vacancy %", (@inputs[:vacancy_pct] * 100).round ], [ :inflation, "Inflation %", (@inputs[:inflation] * 100).round(1) ] ].each do |field, label, value| %>
+      <div>
+        <%= label_tag field, label, class: "block text-xs text-secondary mb-1" %>
+        <%= number_field_tag field, value, step: "any", autocomplete: "off", class: "rounded-lg border border-secondary bg-container text-primary text-sm px-2 py-2 w-24" %>
+      </div>
+    <% end %>
+    <%= f.submit "Update", class: "rounded-lg bg-gray-900 text-white text-sm font-medium px-4 py-2 cursor-pointer" %>
+  <% end %>
+</div>
+
+<%# 2. Cash-flow pro forma %>
+<div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+  <h2 class="text-lg font-medium text-primary mb-3">Cash flow (year 1, real)</h2>
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+    <% [
+         [ "Gross yield", rr_pct_yr(@cash_flow[:gross_yield]) ],
+         [ "Cap rate (net)", rr_pct_yr(@cash_flow[:cap_rate]) ],
+         [ "NOI", rr_money(@cash_flow[:noi], currency) ],
+         [ "Debt service", rr_money(@cash_flow[:debt_service], currency) ],
+         [ "Cash-on-cash", @cash_flow[:cash_on_cash] ? rr_pct_yr(@cash_flow[:cash_on_cash]) : "—" ],
+         [ "DSCR", @cash_flow[:dscr] ? @cash_flow[:dscr].round(2) : "—" ],
+         [ "Break-even occupancy", @cash_flow[:break_even_occupancy] ? number_to_percentage(@cash_flow[:break_even_occupancy] * 100, precision: 0) : "—" ],
+         [ "Down payment", rr_money(@cash_flow[:down_payment], currency) ]
+       ].each do |label, value| %>
+      <div>
+        <p class="text-xs text-secondary"><%= label %></p>
+        <p class="text-primary font-medium"><%= value %></p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%# 3. Levered equity distribution %>
+<div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+  <h2 class="text-lg font-medium text-primary mb-1">Levered real equity — distribution</h2>
+  <p class="text-sm text-secondary mb-3">Shaded band p10–p90; line p50. Real terms; leverage cuts both ways.</p>
+  <%= projection_fan_svg(@distribution[:years], @distribution[:p10], @distribution[:p50], @distribution[:p90]) %>
+  <div class="flex justify-between text-xs text-subdued mt-1">
+    <span><%= Date.current.year %></span><span><%= Date.current.year + @holding_years %></span>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-4">
+    <div><p class="text-xs text-secondary">Terminal p10</p><p class="text-destructive font-medium"><%= rr_money(@distribution[:terminal][:p10], currency) %></p></div>
+    <div><p class="text-xs text-secondary">Terminal p50</p><p class="text-primary font-medium"><%= rr_money(@distribution[:terminal][:p50], currency) %></p></div>
+    <div><p class="text-xs text-secondary">Terminal p90</p><p class="text-success font-medium"><%= rr_money(@distribution[:terminal][:p90], currency) %></p></div>
+    <div><p class="text-xs text-secondary">Negative-equity paths</p><p class="text-primary font-medium"><%= number_to_percentage(@distribution[:negative_equity_share] * 100, precision: 0) %></p></div>
+  </div>
+  <p class="text-xs text-subdued mt-3">Annualized levered real return — p10 <%= @distribution[:annualized][:p10] ? rr_pct_yr(@distribution[:annualized][:p10]) : "—" %> · p50 <%= @distribution[:annualized][:p50] ? rr_pct_yr(@distribution[:annualized][:p50]) : "—" %> · p90 <%= @distribution[:annualized][:p90] ? rr_pct_yr(@distribution[:annualized][:p90]) : "—" %></p>
+  <% if @distribution[:table].any? %>
+    <table class="w-full text-sm mt-3">
+      <thead><tr class="text-secondary text-left border-b border-secondary"><th class="py-1 pr-4 font-medium">Horizon</th><th class="py-1 pr-4 font-medium">p10</th><th class="py-1 pr-4 font-medium">p50</th><th class="py-1 font-medium">p90</th></tr></thead>
+      <tbody>
+        <% @distribution[:table].each do |row| %>
+          <tr class="border-b border-secondary">
+            <td class="py-1 pr-4 text-primary"><%= row[:years] %>y</td>
+            <td class="py-1 pr-4 text-destructive"><%= rr_money(row[:p10], currency) %></td>
+            <td class="py-1 pr-4 text-primary"><%= rr_money(row[:p50], currency) %></td>
+            <td class="py-1 text-success"><%= rr_money(row[:p90], currency) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>
+
+<%# 4. Benchmark comparison %>
+<div class="bg-container rounded-xl border border-secondary shadow-xs p-5 mb-5">
+  <h2 class="text-lg font-medium text-primary mb-3">vs liquid alternatives (unlevered, real)</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-secondary text-left border-b border-secondary"><th class="py-1 pr-4 font-medium">Asset</th><th class="py-1 pr-4 font-medium">Expected real return</th><th class="py-1 font-medium">σ</th></tr></thead>
+    <tbody>
+      <% @benchmarks.each do |b| %>
+        <tr class="border-b border-secondary">
+          <td class="py-1 pr-4 text-primary"><%= b[:key] %></td>
+          <td class="py-1 pr-4 text-secondary"><%= rr_pct_yr(b[:expected_real_return]) %></td>
+          <td class="py-1 text-secondary"><%= number_to_percentage((b[:sigma] || 0) * 100, precision: 0) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<%# 5. Assumptions / notes %>
+<div class="bg-container rounded-xl border border-secondary shadow-xs p-5">
+  <h2 class="text-lg font-medium text-primary mb-1">Assumptions & what could break this</h2>
+  <div class="text-sm text-secondary space-y-1">
+    <p>Real price path = real rent growth + valuation reversion (price/rent reverts over the horizon) + a per-path macro regime, with σ from the real-estate CMA. Income (NOI) grows deterministically at the rent-growth assumption (v1 simplification — price carries the risk). Debt is nominal; its real value erodes with inflation.</p>
+    <p>These are <span class="text-primary font-medium">assumptions, not data</span>: city demographics, supply, current rates, and policy are <span class="text-primary">not</span> researched here — set them via the inputs. Leverage amplifies both tails; see the negative-equity share.</p>
+  </div>
+</div>

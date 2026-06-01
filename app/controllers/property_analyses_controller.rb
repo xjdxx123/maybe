@@ -1,4 +1,4 @@
-class PropertyAnalysisController < ApplicationController
+class PropertyAnalysesController < ApplicationController
   def show
     @currency = Current.family.currency
     @region = params[:region].to_s.downcase == "us" ? "us" : "cn"
